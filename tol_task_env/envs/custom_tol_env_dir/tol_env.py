@@ -1,4 +1,7 @@
 import gym
+import tkinter as tk
+
+from envs.custom_tol_env_dir.tol_2d.tol_2d_view import TowerOfLondonTask
 
 
 class ToLTaskEnv(gym.Env):
@@ -6,6 +9,25 @@ class ToLTaskEnv(gym.Env):
 
     def __init__(self, enable_render=True):
         super(ToLTaskEnv, self).__init__()
+
+        root = tk.Tk()
+        root.geometry('1000x700')
+        root.title('Reinforcement Learning - Tower of London Task')
+        moves_counter = tk.IntVar()
+        result_task = TowerOfLondonTask(root, row_on_canvas=1)
+        self.active_task = TowerOfLondonTask(root, row_on_canvas=0, end_task=result_task, moves_counter=moves_counter)
+        moves_counter.set('Number of moves: {}'.format(self.active_task.frame.no_moves))
+        label = tk.Label(root, textvariable=moves_counter)
+        label.grid(row=0, column=3, sticky=tk.W)
+        button_move = tk.Button(root, text='Next random move',
+                                command=lambda: self.active_task.random_move(result_task, moves_counter))
+        button_move.grid(row=0, column=2, sticky=tk.W)
+
+        button_move_randomly = tk.Button(root, text='Keep moving randomly',
+                                         command=(lambda: root.after(2000, self.active_task.move_randomly)))
+        button_move_randomly.grid(row=0, column=1, sticky=tk.W)
+        root.mainloop()
+
         self.viewer = None
         self.enable_render = enable_render
 
