@@ -1,5 +1,6 @@
 import gym
 import tkinter as tk
+from gym.spaces import Discrete
 
 from envs.custom_tol_env_dir.tol_2d.tol_2d_view import TowerOfLondonTask
 
@@ -8,40 +9,88 @@ class ToLTaskEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
     def __init__(self, enable_render=True):
+        """
+        Action space: Represented as (colour permutation number, arrangement number)
+        Colour Permutation Number: there are 6 differnt ways how 3 colour balls can be
+        arranged in the same spatial arrangement
+        Arrangement number : There are 6 possible ways how 3 balls can be arranged in the
+        task spatially.
+        :param enable_render:
+        """
         super(ToLTaskEnv, self).__init__()
-
-        root = tk.Tk()
-        root.geometry('1000x700')
-        root.title('Reinforcement Learning - Tower of London Task')
-        moves_counter = tk.IntVar()
-        result_task = TowerOfLondonTask(root, row_on_canvas=1)
-        self.active_task = TowerOfLondonTask(root, row_on_canvas=0, end_task=result_task, moves_counter=moves_counter)
-        moves_counter.set('Number of moves: {}'.format(self.active_task.frame.no_moves))
-        label = tk.Label(root, textvariable=moves_counter)
-        label.grid(row=0, column=3, sticky=tk.W)
-        button_move = tk.Button(root, text='Next random move',
-                                command=lambda: self.active_task.random_move(result_task, moves_counter))
-        button_move.grid(row=0, column=2, sticky=tk.W)
-
-        button_move_randomly = tk.Button(root, text='Keep moving randomly',
-                                         command=(lambda: root.after(2000, self.active_task.move_randomly)))
-        button_move_randomly.grid(row=0, column=1, sticky=tk.W)
-        root.mainloop()
+        self.root = None
+        self.moves_counter = None
+        self.result_task = None
+        self.active_task = None
 
         self.viewer = None
         self.enable_render = enable_render
-
-        self.state = []
+        self.state = (1, 6)
         self.counter = 0
-        self.done = 0
+        self.is_done = False
         self.reward = 0
-
         self.__version__ = "0.0.1"
-        # Modify the observation space, low, high and shape values according to your custom environment's needs
-        self.observation_space = gym.spaces.Box(low=0.0, high=1.0, shape=(3,))
-        # Modify the action space, and dimension according to your custom environment's needs
-        # self.action_space = gym.spaces.Box(4)
-        print('Env initalized')
+
+        self.observation_space = gym.spaces.MultiDiscrete([(1, 6), (1, 6)])
+        print('Env initialized')
+
+    @staticmethod
+    def clamp(n):
+        minn = 1
+        maxn = 6
+        if n < minn:
+            return maxn
+        elif n > maxn:
+            return minn
+        else:
+            return n
+
+    @property
+    def action_space(self):
+        """
+        Action space is dependant from current state
+        :return: List of tuples that represent actions that can be taken
+        """
+        color_permutation_no = self.state[0]
+        arrangement = self.state[1]
+        possible_actions = {
+            1: [(color_permutation_no, 2), (color_permutation_no, 3)],
+            2: [(color_permutation_no, 1), (color_permutation_no, 3),
+                ((self.clamp(color_permutation_no - 1), 5), (self.clamp(color_permutation_no + 1), 5))[
+                    color_permutation_no % 2 == 1]],
+            3: [(color_permutation_no, 1), (color_permutation_no, 2), (color_permutation_no, 4),
+                (color_permutation_no, 5)],
+            4: [(color_permutation_no, 3), (color_permutation_no, 5),
+                ((self.clamp(color_permutation_no + 1), 6), (self.clamp(color_permutation_no - 1), 6))[
+                    color_permutation_no % 2 == 1]],
+            5: [(color_permutation_no, 3), (color_permutation_no, 4), (color_permutation_no, 6),
+                ((self.clamp(color_permutation_no - 1), 2), (self.clamp(color_permutation_no + 1), 2))[
+                    color_permutation_no % 2 == 1]],
+            6: [(color_permutation_no, 5),
+                ((self.clamp(color_permutation_no + 1), 4), (self.clamp(color_permutation_no - 1), 4))[
+                    color_permutation_no % 2 == 1]]
+        }[arrangement]
+        return possible_actions
+
+    def _set_up_task_window(self):
+        root = tk.Tk()
+        root.geometry('1000x700')
+        root.title('Reinforcement Learning - Tower of London Task')
+        self.moves_counter = tk.IntVar()
+        self.result_task = TowerOfLondonTask(self.root, row_on_canvas=1)
+        self.active_task = TowerOfLondonTask(self.root, row_on_canvas=0, end_task=self.result_task,
+                                             moves_counter=self.moves_counter)
+        self.moves_counter.set('Number of moves: {}'.format(self.active_task.frame.no_moves))
+        label = tk.Label(self.root, textvariable=self.moves_counter)
+        label.grid(row=0, column=3, sticky=tk.W)
+        button_move = tk.Button(self.root, text='Next random move',
+                                command=lambda: self.active_task.random_move(self.result_task, self.moves_counter))
+        button_move.grid(row=0, column=2, sticky=tk.W)
+
+        button_move_randomly = tk.Button(self.root, text='Keep moving randomly',
+                                         command=(lambda: self.root.after(2000, self.active_task.move_randomly)))
+        button_move_randomly.grid(row=0, column=1, sticky=tk.W)
+        return root
 
     def step(self, action):
         """
@@ -83,4 +132,5 @@ class ToLTaskEnv(gym.Env):
         :param mode:
         :return:
         """
-        return
+        self.root = self._set_up_task_window()
+        self.root.mainloop()
