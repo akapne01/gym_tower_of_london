@@ -1,8 +1,15 @@
+from typing import Tuple
+
 import gym
 import tkinter as tk
 from gym.spaces import Discrete
 
 from envs.custom_tol_env_dir.tol_2d.tol_2d_view import TowerOfLondonTask
+
+COLOUR_NO = 0
+ARRANGEMENT_NO = 1
+MIN = 1
+MAX = 6
 
 
 class ToLTaskEnv(gym.Env):
@@ -26,6 +33,7 @@ class ToLTaskEnv(gym.Env):
         self.viewer = None
         self.enable_render = enable_render
         self.state = (1, 6)
+        self.goal_state = (2, 5)
         self.counter = 0
         self.is_done = False
         self.reward = 0
@@ -36,12 +44,10 @@ class ToLTaskEnv(gym.Env):
 
     @staticmethod
     def clamp(n):
-        minn = 1
-        maxn = 6
-        if n < minn:
-            return maxn
-        elif n > maxn:
-            return minn
+        if n < MIN:
+            return MAX
+        elif n > MAX:
+            return MIN
         else:
             return n
 
@@ -51,7 +57,7 @@ class ToLTaskEnv(gym.Env):
         Action space is dependant from current state
         :return: List of tuples that represent actions that can be taken
         """
-        color_permutation_no = self.state[0]
+        color_permutation_no = self.state[COLOUR_NO]
         arrangement = self.state[1]
         possible_actions = {
             1: [(color_permutation_no, 2), (color_permutation_no, 3)],
@@ -92,6 +98,66 @@ class ToLTaskEnv(gym.Env):
         button_move_randomly.grid(row=0, column=1, sticky=tk.W)
         return root
 
+    def __find_closest_goal_arrangement_action(self):
+        result = None
+        candidates = [a for a in self.action_space if a[COLOUR_NO] == self.goal_state[COLOUR_NO]]
+        if len(candidates) == 1:
+            result = candidates[0]
+        else:
+            closest_arrangement = min(candidates[ARRANGEMENT_NO], key=lambda x: abs(x - self.goal_state[ARRANGEMENT_NO]))
+            for action in candidates:
+                if action[ARRANGEMENT_NO] == closest_arrangement:
+                    result = action
+        return result
+
+    def __find_closest_goal_colour_action(self):
+        closest_colour = min(self.action_space[COLOUR_NO], key=lambda x: abs(x - self.goal_state[COLOUR_NO]))
+        for action in self.action_space:
+            if action[COLOUR_NO] == closest_colour:
+                return action
+            else:
+                return None
+
+    def _get_rewarded_action(self) -> Tuple:
+        """
+        Gets all actions from the action space and determines
+        which action leads closer to the goal state and, therefore,
+        should be rewarded.
+        :return: Action from action_space that should be rewarded
+        """
+        is_goal_in_action_space = self.goal_state in self.action_space
+        if is_goal_in_action_space:
+            return self.goal_state
+
+        goal_colour_no = self.goal_state[COLOUR_NO]
+        has_actions_with_goal_colour_no = goal_colour_no in [a[COLOUR_NO] for a in self.action_space]
+
+        if has_actions_with_goal_colour_no:
+            return self.__find_closest_goal_arrangement_action()
+        return self.__find_closest_goal_colour_action()
+
+    def _calculate_reward(self, action: Tuple) -> int:
+        """
+        Only one action from all the possible actions that can be taken
+        has a positive reward. All other actions have a negative reward.
+        First, it calculates which action is leads closer to the the goal
+        state and rewards that action.
+        In order to calculate the action:
+        1) Determine if the action leads directly to the goal state? If so,
+        this action is rewarded
+        2) Else finds action which has a closest colour permutation number
+        and select that action.
+        :param action: action to use to calculate reward
+        :return: +100 if action is rewarded, -100 is not
+        """
+        action_to_reward = self._get_rewarded_action()
+        if action == action_to_reward:
+            print('Returning +100')
+            return +100
+        else:
+            print('Returning -100')
+            return -100
+
     def step(self, action):
         """
         Runs one time-step of the environment's dynamics. The reset() method is called at the end of every episode
@@ -106,6 +172,7 @@ class ToLTaskEnv(gym.Env):
             info (dict):
                 a dictionary containing additional information about the previous action
         """
+
         print('Taking step')
         # Implement your step method here
         #   - Calculate reward based on the action
