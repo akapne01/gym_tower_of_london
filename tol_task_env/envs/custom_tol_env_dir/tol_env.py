@@ -1,15 +1,38 @@
+import queue
+import threading
+import tkinter as tk
 from typing import Tuple
 
 import gym
-import tkinter as tk
-from gym.spaces import Discrete
+from envs.custom_tol_env_dir.tol_2d.ball_coordinates_grid import ObservationSpaceCoordinates
+from envs.custom_tol_env_dir.tol_2d.state import TolState
+from envs.custom_tol_env_dir.tol_2d.tol_2d_view import TowerOfLondonTask, ball_coordinates, TolMainScreen
 
-from envs.custom_tol_env_dir.tol_2d.tol_2d_view import TowerOfLondonTask
-
+"""
+CONSTANTS AND VARIABLES
+"""
 COLOUR_NO = 0
 ARRANGEMENT_NO = 1
 MIN = 1
 MAX = 6
+
+
+# WINDOW_WIDTH = 1000
+# WINDOW_HEIGHT = 700
+# TOL_RATIO = 2 / 3
+# PADDING = 50
+# START_X = 50
+#
+# tol_height = (WINDOW_HEIGHT - (PADDING * 4)) / 2
+# tol_width = tol_height / TOL_RATIO
+#
+# radius = (tol_width - tol_height) / 5
+# increment = (tol_width - tol_height) / 2
+#
+# """
+# Holds all 16 possible ball position coordinates
+# """
+# ball_coordinates = ObservationSpaceCoordinates(START_X + increment, tol_height, TOL_RATIO)
 
 
 class ToLTaskEnv(gym.Env):
@@ -18,28 +41,33 @@ class ToLTaskEnv(gym.Env):
     def __init__(self, enable_render=True):
         """
         Action space: Represented as (colour permutation number, arrangement number)
-        Colour Permutation Number: there are 6 differnt ways how 3 colour balls can be
+        Colour Permutation Number: there are 6 different ways how 3 colour balls can be
         arranged in the same spatial arrangement
         Arrangement number : There are 6 possible ways how 3 balls can be arranged in the
         task spatially.
         :param enable_render:
         """
         super(ToLTaskEnv, self).__init__()
-        self.root = None
-        self.moves_counter = None
-        self.result_task = None
-        self.active_task = None
 
-        self.viewer = None
-        self.enable_render = enable_render
-        self.state = (1, 6)
-        self.goal_state = (2, 5)
+        # self.root = tk.Tk()
+        self.state = TolState(1, 6)
+        self.end_state = TolState(2, 5)
+        self.main = TolMainScreen(state=self.state, end_state=self.end_state)
+        # self.active_task = TowerOfLondonTask(self.root, row_on_canvas=0, state=self.state,
+        #                                      coordinates=ball_coordinates)
+        # self.result_task = TowerOfLondonTask(self.root, row_on_canvas=1, state=self.end_state,
+        #                                      coordinates=ball_coordinates)
+        self.active_task = self.main.active_task
+        self.result_task = self.main.result_task
         self.counter = 0
         self.is_done = False
         self.reward = 0
         self.__version__ = "0.0.1"
-
         self.observation_space = gym.spaces.MultiDiscrete([(1, 6), (1, 6)])
+        self.enable_render = enable_render
+        # if enable_render:
+        #     self.render()
+
         print('Env initialized')
 
     @staticmethod
@@ -57,8 +85,8 @@ class ToLTaskEnv(gym.Env):
         Action space is dependant from current state
         :return: List of tuples that represent actions that can be taken
         """
-        color_permutation_no = self.state[COLOUR_NO]
-        arrangement = self.state[1]
+        color_permutation_no = self.state.permutation_no
+        arrangement = self.state.arrangement_number
         possible_actions = {
             1: [(color_permutation_no, 2), (color_permutation_no, 3)],
             2: [(color_permutation_no, 1), (color_permutation_no, 3),
@@ -78,25 +106,20 @@ class ToLTaskEnv(gym.Env):
         }[arrangement]
         return possible_actions
 
-    def _set_up_task_window(self):
-        root = tk.Tk()
-        root.geometry('1000x700')
-        root.title('Reinforcement Learning - Tower of London Task')
-        self.moves_counter = tk.IntVar()
-        self.result_task = TowerOfLondonTask(self.root, row_on_canvas=1)
-        self.active_task = TowerOfLondonTask(self.root, row_on_canvas=0, end_task=self.result_task,
-                                             moves_counter=self.moves_counter)
-        self.moves_counter.set('Number of moves: {}'.format(self.active_task.frame.no_moves))
-        label = tk.Label(self.root, textvariable=self.moves_counter)
-        label.grid(row=0, column=3, sticky=tk.W)
-        button_move = tk.Button(self.root, text='Next random move',
-                                command=lambda: self.active_task.random_move(self.result_task, self.moves_counter))
-        button_move.grid(row=0, column=2, sticky=tk.W)
+    def _add_task_title(self):
+        text = tk.StringVar()
+        text.set('Active Task')
+        goal_text = tk.StringVar()
+        goal_text.set('Goal Task')
+        title = tk.Label(self.root, textvariable=text)
+        goal_title = tk.Label(self.root, textvariable=goal_text)
+        title.grid(row=0, column=0, sticky=tk.NW)
+        goal_title.grid(row=1, column=0, sticky=tk.NW)
 
-        button_move_randomly = tk.Button(self.root, text='Keep moving randomly',
-                                         command=(lambda: self.root.after(2000, self.active_task.move_randomly)))
-        button_move_randomly.grid(row=0, column=1, sticky=tk.W)
-        return root
+    def _set_up_canvas(self):
+        self.root.geometry('490x700')
+        self.root.title('Reinforcement Learning - Tower of London Task')
+        self._add_task_title()
 
     def __find_closest_goal_arrangement_action(self):
         result = None
@@ -104,7 +127,8 @@ class ToLTaskEnv(gym.Env):
         if len(candidates) == 1:
             result = candidates[0]
         else:
-            closest_arrangement = min(candidates[ARRANGEMENT_NO], key=lambda x: abs(x - self.goal_state[ARRANGEMENT_NO]))
+            closest_arrangement = min(candidates[ARRANGEMENT_NO],
+                                      key=lambda x: abs(x - self.goal_state[ARRANGEMENT_NO]))
             for action in candidates:
                 if action[ARRANGEMENT_NO] == closest_arrangement:
                     result = action
@@ -194,10 +218,4 @@ class ToLTaskEnv(gym.Env):
         # return observation
 
     def render(self, mode='human', close=False):
-        """
-
-        :param mode:
-        :return:
-        """
-        self.root = self._set_up_task_window()
-        self.root.mainloop()
+        pass
