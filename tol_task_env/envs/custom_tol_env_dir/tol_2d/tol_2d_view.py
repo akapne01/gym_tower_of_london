@@ -30,17 +30,14 @@ FUNCTIONS TO DRAW TASK LINES
 
 
 def rod1_line_coordinates(x) -> Tuple:
-    # start = XYPositions(x=(x + increment), y=(x + tol_height - increment))
-    # end = XYPositions(x=x + increment, y=x + tol_height)
-
-    start = XYPositions(x=(x + increment), y=(x + tol_height - increment))
-    end = XYPositions(x=x + increment, y=x + tol_height)
+    start = XYPositions(x=(x + increment), y=(x + tol_height - increment * 3))
+    end = XYPositions(x=x + increment, y=x + tol_height - increment * 2)
     return start, end
 
 
 def rod2_line_coordinates(x):
-    start = XYPositions(x=x + increment * 3, y=x + tol_height - increment * 2)
-    end = XYPositions(x=x + increment * 3, y=x + tol_height)
+    start = XYPositions(x=x + increment * 3, y=x + tol_height - increment * 3)
+    end = XYPositions(x=x + increment * 3, y=x + tol_height - increment)
     return start, end
 
 
@@ -51,29 +48,9 @@ def rod3_line_coordinates(x):
 
 
 def horizontal_line_coordinates(x):
-    # start = XYPositions(x=x, y=x + tol_height)
-    # end = XYPositions(x=x + tol_width, y=x + tol_height)
     start = XYPositions(x=x, y=x + increment)
     end = XYPositions(x=x + tol_width, y=x + increment)
     return start, end
-
-
-# def draw_line(xy_array, canvas):
-#     x1 = xy_array[0]
-#     y1 = xy_array[1]
-#     x2 = xy_array[2]
-#     y2 = xy_array[3]
-#     canvas.create_line(x1, y1, x2, y2)
-
-
-# def draw_task_lines(x, canvas):
-#     rod1 = rod1_line_coordinates(x)
-#     rod2 = rod2_line_coordinates(x)
-#     rod3 = rod3_line_coordinates(x)
-#     canvas.create_line(x, x + tol_height, x + tol_width, x + tol_height)  # horizontal
-#     draw_line(rod1, canvas)
-#     draw_line(rod2, canvas)
-#     draw_line(rod3, canvas)
 
 
 class TowerOfLondonTask:
@@ -92,7 +69,6 @@ class TowerOfLondonTask:
         """
         self.task_canvas = tk.Canvas(root, width=tol_width + PADDING * 2, height=tol_height + PADDING * 2, bg='white')
         self.task_canvas.grid(row=row_on_canvas, column=0, sticky=tk.W)
-        # draw_task_lines(START_X, self.task_canvas)
         self.coordinates = coordinates
         self.state = state
 
@@ -145,7 +121,6 @@ class TolMainScreen:
         self.result_task = TowerOfLondonTask(self.root, row_on_canvas=1, state=self.end_state,
                                              coordinates=ball_coordinates)
         self._set_up_canvas()
-        # self.root.mainloop()
 
     def _add_task_title(self):
         text = tk.StringVar()
