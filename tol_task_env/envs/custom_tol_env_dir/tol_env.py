@@ -3,40 +3,25 @@ from typing import Tuple, List
 
 import gym
 import pyglet
-from envs.custom_tol_env_dir.tol_2d.ball_coordinates_grid import ObservationSpaceCoordinates, state_ball_mapper
+from envs.custom_tol_env_dir.tol_2d.ball_coordinates_grid import state_ball_mapper
 from envs.custom_tol_env_dir.tol_2d.state import TolState
 from envs.custom_tol_env_dir.tol_2d.tol_2d_view import rod1_line_coordinates, \
-    rod2_line_coordinates, rod3_line_coordinates, horizontal_line_coordinates
+    rod2_line_coordinates, rod3_line_coordinates, horizontal_line_coordinates, active_ball_coordinates, \
+    goal_ball_coordinates, WINDOW_WIDTH, WINDOW_HEIGHT, START_X, radius, tol_height, increment
+from gym.envs.classic_control import rendering
 
 """
-CONSTANTS AND VARIABLES
+CONSTANTS
 """
 COLOUR_NO = 0
 ARRANGEMENT_NO = 1
 MIN = 1
 MAX = 6
 
-WINDOW_WIDTH = 1000
-WINDOW_HEIGHT = 700
-TOL_RATIO = 2 / 3
-PADDING = 50
-START_X = 50
-
-tol_height = (WINDOW_HEIGHT - (PADDING * 4)) / 2
-tol_width = tol_height / TOL_RATIO
-
-radius = (tol_width - tol_height) / 5
-increment = (tol_width - tol_height) / 2
-
-"""
-Holds all 16 possible ball position coordinates
-"""
-ball_coordinates = ObservationSpaceCoordinates(START_X + increment, tol_height, TOL_RATIO)
-
 
 class ToLTaskEnv(gym.Env):
     metadata = {
-        'render.modes': ['human', 'rgb_array'],
+        'render.modes': ['human'],
     }
 
     def __init__(self):
@@ -46,12 +31,12 @@ class ToLTaskEnv(gym.Env):
         arranged in the same spatial arrangement
         Arrangement number : There are 6 possible ways how 3 balls can be arranged in the
         task spatially.
-        :param enable_render:
         """
         super(ToLTaskEnv, self).__init__()
 
-        self.state = TolState(1, 1)
+        self.state = TolState(1, 6)
         self.goal_state = TolState(2, 5)
+
         self.counter = 0
         self.is_done = False
         self.reward = 0
@@ -59,16 +44,31 @@ class ToLTaskEnv(gym.Env):
         self.observation_space = gym.spaces.MultiDiscrete([(1, 6), (1, 6)])
         self.viewer = None
 
+        # Active Task
         self.ball_positions = state_ball_mapper.get(self.state)
 
         self.red = self.ball_positions.red
         self.green = self.ball_positions.green
         self.blue = self.ball_positions.blue
 
-        self.red_coordinates = ball_coordinates.get_position_coordinates(self.red)
-        self.green_coordinates = ball_coordinates.get_position_coordinates(self.green)
-        self.blue_coordinates = ball_coordinates.get_position_coordinates(self.blue)
+        self.red_coordinates = active_ball_coordinates.get_position_coordinates(self.red)
+        self.green_coordinates = active_ball_coordinates.get_position_coordinates(self.green)
+        self.blue_coordinates = active_ball_coordinates.get_position_coordinates(self.blue)
 
+        # Goal Task
+        self.goal_positions = state_ball_mapper.get(self.goal_state)
+
+        self.goal_red = self.goal_positions.red
+        self.goal_green = self.goal_positions.green
+        self.goal_blue = self.goal_positions.blue
+
+        self.goal_red_coordinates = goal_ball_coordinates.get_position_coordinates(self.goal_red)
+        self.goal_green_coordinates = goal_ball_coordinates.get_position_coordinates(self.goal_green)
+        self.goal_blue_coordinates = goal_ball_coordinates.get_position_coordinates(self.goal_blue)
+
+        self.label_color = (10, 20, 255, 255)
+        self.active_task_label = None
+        self.goal_task_label = None
 
         print('Env initialized')
 
@@ -237,57 +237,103 @@ class ToLTaskEnv(gym.Env):
 
     def render(self, mode='human', close=False):
         if self.viewer is None:
-            from gym.envs.classic_control import rendering
             self.viewer = rendering.Viewer(WINDOW_WIDTH, WINDOW_HEIGHT)
 
-            # Adding label
+            # Adding labels
+            self._add_active_task_label(x=350, y=50)
+            self._add_goal_task_label(x=300, y=350)
+            self.active_task_label.text = f'Current state of the active task: {self.state}'
+            self.goal_task_label.text = f'Goal Task state is: {self.goal_state}'
 
-            self.acvtiva_task_label = pyglet.text.Label('Active Task', font_size=12,
-                                                        x=400,
-                                                        y=50,
-                                                        anchor_x='center',
-                                                        anchor_y='center',
-                                                        color=(10, 20, 255, 255)
-                                                        )
-            self.acvtiva_task_label.text = f'Current state of the active task: {self.state}'
-            self.acvtiva_task_label.draw()
-            self.viewer.add_geom(DrawText(self.acvtiva_task_label))
-
-            l1 = rod1_line_coordinates(START_X)
-            l2 = rod2_line_coordinates(START_X)
-            l3 = rod3_line_coordinates(START_X)
-            hl = horizontal_line_coordinates(START_X)
-
-            line = rendering.Line(l1[0], l1[1])
-            line2 = rendering.Line(l2[0], l2[1])
-            line3 = rendering.Line(l3[0], l3[1])
-            hor_line = rendering.Line(hl[0], hl[1])
-            self.viewer.add_geom(line)
-            self.viewer.add_geom(line2)
-            self.viewer.add_geom(line3)
-            self.viewer.add_geom(hor_line)
-
+            """
+            Active Task 
+            """
+            self._draw_task_frame(START_X)
             # Red
-            red = rendering.make_circle(25)
+            red = rendering.make_circle(radius)
             red.set_color(250, 0, 0)
             transform = rendering.Transform(translation=self.red_coordinates)
             red.add_attr(transform)
             self.viewer.add_geom(red)
 
             # Green
-            green = rendering.make_circle(25)
+            green = rendering.make_circle(radius)
             green.set_color(0, 99, 0)
             transform = rendering.Transform(translation=self.green_coordinates)
             green.add_attr(transform)
             self.viewer.add_geom(green)
 
-            blue = rendering.make_circle(25)
+            # Blue
+            blue = rendering.make_circle(radius)
             blue.set_color(0, 0, 19)
             transform = rendering.Transform(translation=self.blue_coordinates)
             blue.add_attr(transform)
             self.viewer.add_geom(blue)
 
+            """
+            Goal Task 
+            """
+            self._draw_task_frame(START_X, tol_height + increment)
+            self._add_goal_task()
+
         return self.viewer.render()
+
+    def _draw_task_frame(self, x, y_increment=0.0):
+        l1 = rod1_line_coordinates(x, y_increment)
+        l2 = rod2_line_coordinates(x, y_increment)
+        l3 = rod3_line_coordinates(x, y_increment)
+        hl = horizontal_line_coordinates(x, y_increment)
+        line = rendering.Line(l1[0], l1[1])
+        line2 = rendering.Line(l2[0], l2[1])
+        line3 = rendering.Line(l3[0], l3[1])
+        hor_line = rendering.Line(hl[0], hl[1])
+        self.viewer.add_geom(line)
+        self.viewer.add_geom(line2)
+        self.viewer.add_geom(line3)
+        self.viewer.add_geom(hor_line)
+
+    def _add_goal_task(self):
+        # Red
+        red = rendering.make_circle(radius)
+        red.set_color(250, 0, 0)
+        transform = rendering.Transform(translation=self.goal_red_coordinates)
+        red.add_attr(transform)
+        self.viewer.add_geom(red)
+
+        # Green
+        green = rendering.make_circle(radius)
+        green.set_color(0, 99, 0)
+        transform = rendering.Transform(translation=self.goal_green_coordinates)
+        green.add_attr(transform)
+        self.viewer.add_geom(green)
+
+        blue = rendering.make_circle(radius)
+        blue.set_color(0, 0, 19)
+        transform = rendering.Transform(translation=self.goal_blue_coordinates)
+        blue.add_attr(transform)
+        self.viewer.add_geom(blue)
+
+    def _add_active_task_label(self, x, y):
+        self.active_task_label = pyglet.text.Label(font_size=12,
+                                                   x=x,
+                                                   y=y,
+                                                   anchor_x='center',
+                                                   anchor_y='center',
+                                                   color=self.label_color
+                                                   )
+        self.active_task_label.draw()
+        self.viewer.add_geom(DrawText(self.active_task_label))
+
+    def _add_goal_task_label(self, x, y):
+        self.goal_task_label = pyglet.text.Label(font_size=12,
+                                                 x=x,
+                                                 y=y,
+                                                 anchor_x='center',
+                                                 anchor_y='center',
+                                                 color=self.label_color
+                                                 )
+        self.goal_task_label.draw()
+        self.viewer.add_geom(DrawText(self.goal_task_label))
 
 
 class DrawText:

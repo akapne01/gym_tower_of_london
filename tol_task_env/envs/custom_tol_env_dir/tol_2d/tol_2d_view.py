@@ -19,34 +19,38 @@ radius = (tol_width - tol_height) / 5
 increment = (tol_width - tol_height) / 2
 
 """
-Holds all 16 possible ball position coordinates 
+Holds all 16 possible ball position coordinates or active and goal tasks
 """
-ball_coordinates = ObservationSpaceCoordinates(START_X + increment, tol_height, TOL_RATIO)
+active_x = START_X + increment
+active_y = active_x + radius
+goal_y = active_x + tol_height + increment + radius
+active_ball_coordinates = ObservationSpaceCoordinates(x=active_x, y=active_y, height=tol_height, aspect_ratio=TOL_RATIO)
+goal_ball_coordinates = ObservationSpaceCoordinates(x=active_x, y=goal_y, height=tol_height, aspect_ratio=TOL_RATIO)
 
 """
 FUNCTIONS TO DRAW TASK LINES
 """
 
 
-def rod1_line_coordinates(x) -> Tuple:
-    start = XYPositions(x=(x + increment), y=(x + tol_height - increment * 3))
-    end = XYPositions(x=x + increment, y=x + tol_height - increment * 2)
+def rod1_line_coordinates(x, y_increment=0.0) -> Tuple:
+    start = XYPositions(x=(x + increment), y=(x + tol_height - increment * 3) + y_increment)
+    end = XYPositions(x=x + increment, y=x + tol_height - increment * 2 + y_increment)
     return start, end
 
 
-def rod2_line_coordinates(x):
-    start = XYPositions(x=x + increment * 3, y=x + tol_height - increment * 3)
-    end = XYPositions(x=x + increment * 3, y=x + tol_height - increment)
+def rod2_line_coordinates(x, y_increment=0.0):
+    start = XYPositions(x=x + increment * 3, y=x + tol_height - increment * 3 + y_increment)
+    end = XYPositions(x=x + increment * 3, y=x + tol_height - increment + +  y_increment)
     return start, end
 
 
-def rod3_line_coordinates(x):
-    start = XYPositions(x=x + increment * 5, y=x + tol_height - increment * 3)
-    end = XYPositions(x=x + increment * 5, y=x + tol_height)
+def rod3_line_coordinates(x, y_increment=0.0):
+    start = XYPositions(x=x + increment * 5, y=x + tol_height - increment * 3 + y_increment)
+    end = XYPositions(x=x + increment * 5, y=x + tol_height + y_increment)
     return start, end
 
 
-def horizontal_line_coordinates(x):
-    start = XYPositions(x=x, y=x + increment)
-    end = XYPositions(x=x + tol_width, y=x + increment)
+def horizontal_line_coordinates(x, y_increment=0.0):
+    start = XYPositions(x=x, y=x + increment + y_increment)
+    end = XYPositions(x=x + tol_width, y=x + increment + y_increment)
     return start, end
