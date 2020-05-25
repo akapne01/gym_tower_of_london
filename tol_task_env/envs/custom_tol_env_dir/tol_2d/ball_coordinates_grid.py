@@ -13,48 +13,48 @@ second number denotes position if the green ball
 and third number is position of the blue ball
 """
 state_ball_mapper = {
-        TolState(1, 1): BallPositions(31, 32, 33),
-        TolState(1, 2): BallPositions(31, 32, 11),
-        TolState(1, 3): BallPositions(31, 32, 21),
-        TolState(1, 4): BallPositions(31, 22, 21),
-        TolState(1, 5): BallPositions(31, 11, 21),
-        TolState(1, 6): BallPositions(22, 11, 21),
+    TolState(1, 1): BallPositions(31, 32, 33),
+    TolState(1, 2): BallPositions(31, 32, 11),
+    TolState(1, 3): BallPositions(31, 32, 21),
+    TolState(1, 4): BallPositions(31, 22, 21),
+    TolState(1, 5): BallPositions(31, 11, 21),
+    TolState(1, 6): BallPositions(22, 11, 21),
 
-        TolState(2, 1): BallPositions(31, 33, 32),
-        TolState(2, 2): BallPositions(31, 11, 32),
-        TolState(2, 3): BallPositions(31, 21, 32),
-        TolState(2, 4): BallPositions(31, 21, 22),
-        TolState(2, 5): BallPositions(31, 21, 11),
-        TolState(2, 6): BallPositions(22, 21, 11),
+    TolState(2, 1): BallPositions(31, 33, 32),
+    TolState(2, 2): BallPositions(31, 11, 32),
+    TolState(2, 3): BallPositions(31, 21, 32),
+    TolState(2, 4): BallPositions(31, 21, 22),
+    TolState(2, 5): BallPositions(31, 21, 11),
+    TolState(2, 6): BallPositions(22, 21, 11),
 
-        TolState(3, 1): BallPositions(32, 32, 31),
-        TolState(3, 2): BallPositions(32, 11, 31),
-        TolState(3, 3): BallPositions(32, 21, 31),
-        TolState(3, 4): BallPositions(22, 21, 31),
-        TolState(3, 5): BallPositions(11, 21, 31),
-        TolState(3, 6): BallPositions(11, 21, 22),
+    TolState(3, 1): BallPositions(32, 32, 31),
+    TolState(3, 2): BallPositions(32, 11, 31),
+    TolState(3, 3): BallPositions(32, 21, 31),
+    TolState(3, 4): BallPositions(22, 21, 31),
+    TolState(3, 5): BallPositions(11, 21, 31),
+    TolState(3, 6): BallPositions(11, 21, 22),
 
-        TolState(4, 1): BallPositions(33, 32, 31),
-        TolState(4, 2): BallPositions(11, 32, 31),
-        TolState(4, 3): BallPositions(21, 32, 31),
-        TolState(4, 4): BallPositions(21, 22, 31),
-        TolState(4, 5): BallPositions(21, 11, 31),
-        TolState(4, 6): BallPositions(21, 11, 22),
+    TolState(4, 1): BallPositions(33, 32, 31),
+    TolState(4, 2): BallPositions(11, 32, 31),
+    TolState(4, 3): BallPositions(21, 32, 31),
+    TolState(4, 4): BallPositions(21, 22, 31),
+    TolState(4, 5): BallPositions(21, 11, 31),
+    TolState(4, 6): BallPositions(21, 11, 22),
 
-        TolState(5, 1): BallPositions(33, 31, 32),
-        TolState(5, 2): BallPositions(11, 31, 32),
-        TolState(5, 3): BallPositions(21, 31, 32),
-        TolState(5, 4): BallPositions(21, 31, 22),
-        TolState(5, 5): BallPositions(21, 31, 11),
-        TolState(5, 6): BallPositions(21, 22, 11),
+    TolState(5, 1): BallPositions(33, 31, 32),
+    TolState(5, 2): BallPositions(11, 31, 32),
+    TolState(5, 3): BallPositions(21, 31, 32),
+    TolState(5, 4): BallPositions(21, 31, 22),
+    TolState(5, 5): BallPositions(21, 31, 11),
+    TolState(5, 6): BallPositions(21, 22, 11),
 
-        TolState(6, 1): BallPositions(32, 31, 33),
-        TolState(6, 2): BallPositions(32, 31, 11),
-        TolState(6, 3): BallPositions(32, 31, 21),
-        TolState(6, 4): BallPositions(22, 31, 21),
-        TolState(6, 5): BallPositions(11, 31, 21),
-        TolState(6, 6): BallPositions(11, 22, 21),
-    }
+    TolState(6, 1): BallPositions(32, 31, 33),
+    TolState(6, 2): BallPositions(32, 31, 11),
+    TolState(6, 3): BallPositions(32, 31, 21),
+    TolState(6, 4): BallPositions(22, 31, 21),
+    TolState(6, 5): BallPositions(11, 31, 21),
+    TolState(6, 6): BallPositions(11, 22, 21),
+}
 
 
 class ObservationSpaceCoordinates:
@@ -63,20 +63,20 @@ class ObservationSpaceCoordinates:
     of the Tower of London Task.
     """
 
-    def __init__(self, x, tol_height, tol_aspect_ratio):
+    def __init__(self, x, y, height, aspect_ratio):
         """
         Creates a coordinate matrix with x, y, r positions
         :param x: Starting position x
-        :param tol_height: Height
-        :param tol_aspect_ratio: Aspect ratio
+        :param height: Height
+        :param aspect_ratio: Aspect ratio
         """
         self.PositionCoordinates = namedtuple('PositionCoordinates', ['x', 'y'])
-        length = tol_height / tol_aspect_ratio
+        length = height / aspect_ratio
         self.x = x
-        self.height = tol_height
+        self.height = height
         self.length = length
-        self.radius = (length - tol_height) / 5
-        self.y = x + self.radius
+        self.radius = (length - height) / 5
+        self.y = y
         self.coordinate_matrix = self._create_coordinates()
 
     def _create_coordinates(self):
@@ -102,4 +102,3 @@ class ObservationSpaceCoordinates:
         x, y and r positions to draw a ball there.
         """
         return self.coordinate_matrix.get(position)
-
