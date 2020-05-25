@@ -2,6 +2,16 @@ from collections import namedtuple
 
 from envs.custom_tol_env_dir.tol_2d.state import TolState, BallPositions
 
+"""
+Maps State to the ball positions on the pegs.
+Possible ball positions are as follows:
+-   - 33
+-  22 32
+11 21 31
+First number denotes position of the red ball, 
+second number denotes position if the green ball 
+and third number is position of the blue ball
+"""
 state_ball_mapper = {
         TolState(1, 1): BallPositions(31, 32, 33),
         TolState(1, 2): BallPositions(31, 32, 11),
@@ -48,6 +58,11 @@ state_ball_mapper = {
 
 
 class ObservationSpaceCoordinates:
+    """
+    Class that holds matrix of all possible ball positions (x, y)
+    of the Tower of London Task.
+    """
+
     def __init__(self, x, tol_height, tol_aspect_ratio):
         """
         Creates a coordinate matrix with x, y, r positions
@@ -55,24 +70,23 @@ class ObservationSpaceCoordinates:
         :param tol_height: Height
         :param tol_aspect_ratio: Aspect ratio
         """
-        self.PositionCoordinates = namedtuple('PositionCoordinates', ['x', 'y', 'r'])
+        self.PositionCoordinates = namedtuple('PositionCoordinates', ['x', 'y'])
         length = tol_height / tol_aspect_ratio
         self.x = x
         self.height = tol_height
         self.length = length
         self.radius = (length - tol_height) / 5
-        increment = (length - tol_height) / 2
-        self.y = x + tol_height - increment - self.radius
+        self.y = x + self.radius
         self.coordinate_matrix = self._create_coordinates()
 
     def _create_coordinates(self):
         add_x = self.length - self.height
-        r0_b0 = self.PositionCoordinates(self.x, self.y, self.radius)
-        r1_b0 = self.PositionCoordinates(self.x + add_x, self.y, self.radius)
-        r1_b1 = self.PositionCoordinates(self.x + add_x, self.y - self.radius * 2, self.radius)
-        r2_b0 = self.PositionCoordinates(self.x + add_x * 2, self.y, self.radius)
-        r2_b1 = self.PositionCoordinates(self.x + add_x * 2, self.y - self.radius * 2, self.radius)
-        r2_b2 = self.PositionCoordinates(self.x + add_x * 2, self.y - self.radius * 4, self.radius)
+        r0_b0 = self.PositionCoordinates(self.x, self.y)
+        r1_b0 = self.PositionCoordinates(self.x + add_x, self.y)
+        r1_b1 = self.PositionCoordinates(self.x + add_x, self.y + self.radius * 2)
+        r2_b0 = self.PositionCoordinates(self.x + add_x * 2, self.y)
+        r2_b1 = self.PositionCoordinates(self.x + add_x * 2, self.y + self.radius * 2)
+        r2_b2 = self.PositionCoordinates(self.x + add_x * 2, self.y + self.radius * 4)
         matrix_dict = {11: r0_b0, 21: r1_b0, 22: r1_b1, 31: r2_b0, 32: r2_b1, 33: r2_b2}
         return matrix_dict
 
@@ -88,12 +102,4 @@ class ObservationSpaceCoordinates:
         x, y and r positions to draw a ball there.
         """
         return self.coordinate_matrix.get(position)
-
-if __name__ == '__main__':
-    co = ObservationSpaceCoordinates(x=112.5, tol_height=250.0, tol_aspect_ratio=2 / 3)
-    print(co.coordinate_matrix)
-    a = co.get_position_coordinates(11)
-    print(a.x)
-    print(a.y)
-    print(a.r)
 

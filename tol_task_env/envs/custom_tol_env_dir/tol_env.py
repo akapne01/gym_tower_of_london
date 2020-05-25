@@ -3,7 +3,7 @@ from typing import Tuple, List
 
 import gym
 import pyglet
-from envs.custom_tol_env_dir.tol_2d.ball_coordinates_grid import ObservationSpaceCoordinates
+from envs.custom_tol_env_dir.tol_2d.ball_coordinates_grid import ObservationSpaceCoordinates, state_ball_mapper
 from envs.custom_tol_env_dir.tol_2d.state import TolState
 from envs.custom_tol_env_dir.tol_2d.tol_2d_view import rod1_line_coordinates, \
     rod2_line_coordinates, rod3_line_coordinates, horizontal_line_coordinates
@@ -50,7 +50,7 @@ class ToLTaskEnv(gym.Env):
         """
         super(ToLTaskEnv, self).__init__()
 
-        self.state = TolState(1, 6)
+        self.state = TolState(1, 1)
         self.goal_state = TolState(2, 5)
         self.counter = 0
         self.is_done = False
@@ -58,6 +58,18 @@ class ToLTaskEnv(gym.Env):
         self.__version__ = "0.0.1"
         self.observation_space = gym.spaces.MultiDiscrete([(1, 6), (1, 6)])
         self.viewer = None
+
+        self.ball_positions = state_ball_mapper.get(self.state)
+
+        self.red = self.ball_positions.red
+        self.green = self.ball_positions.green
+        self.blue = self.ball_positions.blue
+
+        self.red_coordinates = ball_coordinates.get_position_coordinates(self.red)
+        self.green_coordinates = ball_coordinates.get_position_coordinates(self.green)
+        self.blue_coordinates = ball_coordinates.get_position_coordinates(self.blue)
+
+
         print('Env initialized')
 
     @staticmethod
@@ -233,7 +245,6 @@ class ToLTaskEnv(gym.Env):
             self.acvtiva_task_label = pyglet.text.Label('Active Task', font_size=12,
                                                         x=400,
                                                         y=50,
-                                                        # x=50, y=WINDOW_HEIGHT * 2.5 / 40.00,
                                                         anchor_x='center',
                                                         anchor_y='center',
                                                         color=(10, 20, 255, 255)
@@ -259,24 +270,23 @@ class ToLTaskEnv(gym.Env):
             # Red
             red = rendering.make_circle(25)
             red.set_color(250, 0, 0)
-            transform = rendering.Transform(translation=(237.5, 225.0))
+            transform = rendering.Transform(translation=self.red_coordinates)
             red.add_attr(transform)
             self.viewer.add_geom(red)
 
             # Green
             green = rendering.make_circle(25)
             green.set_color(0, 99, 0)
-            transform = rendering.Transform(translation=(112.5, 275.0))
+            transform = rendering.Transform(translation=self.green_coordinates)
             green.add_attr(transform)
             self.viewer.add_geom(green)
 
             blue = rendering.make_circle(25)
             blue.set_color(0, 0, 19)
-            transform = rendering.Transform(translation=(237.5, 275.0))
+            transform = rendering.Transform(translation=self.blue_coordinates)
             blue.add_attr(transform)
             self.viewer.add_geom(blue)
 
-        # return self.viewer.render(return_rgb_array=mode == 'rgb_array')
         return self.viewer.render()
 
 
