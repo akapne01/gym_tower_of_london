@@ -24,7 +24,7 @@ class ToLTaskEnv(gym.Env):
         'render.modes': ['human'],
     }
 
-    def __init__(self):
+    def __init__(self, start_state=(1, 6), goal_state=(2, 5)):
         """
         Action space: Represented as (colour permutation number, arrangement number)
         Colour Permutation Number: there are 6 different ways how 3 colour balls can be
@@ -33,9 +33,9 @@ class ToLTaskEnv(gym.Env):
         task spatially.
         """
         super(ToLTaskEnv, self).__init__()
-
-        self.state = TolState(1, 6)
-        self.goal_state = TolState(2, 5)
+        self._initial_state = TolState(start_state[0], start_state[1])
+        self.state = TolState(start_state[0], start_state[1])
+        self.goal_state = TolState(goal_state[0], goal_state[1])
 
         self.counter = 0
         self.is_done = False
@@ -54,6 +54,13 @@ class ToLTaskEnv(gym.Env):
         self.label_color = (10, 20, 255, 255)
         self.active_task_label = None
         self.goal_task_label = None
+
+        self.red_ball = None
+        self.green_ball = None
+        self.blue_ball = None
+        self.transform_red = None
+        self.transform_green = None
+        self.transform_blue = None
 
         print('Env initialized')
 
@@ -276,10 +283,22 @@ class ToLTaskEnv(gym.Env):
         if not self.is_done:
             self.reward = self._calculate_reward(action)
             self.state = action
+            self.counter += 1
             if self.is_game_complete():
                 self.is_done = True
-        self.info = self.state
+
+        self.info = {
+            'initial_state': self._initial_state,
+            'state': self.state,
+            'goal_state': self.goal_state,
+            'action_space': self.action_space,
+            'red_position': self.red,
+            'green_position': self.green,
+            'blue_position': self.blue,
+            'count': self.counter
+        }
         print(f'Returning action={action}, reward={self.reward}, is_done={self.is_done}, info={self.info} ')
+        print()
         return action, self.reward, self.is_done, self.info
 
     def reset(self):
@@ -297,6 +316,7 @@ class ToLTaskEnv(gym.Env):
         return observation
 
     def render(self, mode='human', close=False):
+
         if self.viewer is None:
             self.viewer = rendering.Viewer(WINDOW_WIDTH, WINDOW_HEIGHT)
 
@@ -311,31 +331,37 @@ class ToLTaskEnv(gym.Env):
             """
             self._draw_task_frame(START_X)
             # Red
-            red = rendering.make_circle(radius)
-            red.set_color(250, 0, 0)
-            transform = rendering.Transform(translation=self.red_coordinates)
-            red.add_attr(transform)
-            self.viewer.add_geom(red)
+            self.red_ball = rendering.make_circle(radius)
+            self.red_ball.set_color(250, 0, 0)
+            self.transform_red = rendering.Transform(translation=self.red_coordinates)
+            self.red_ball.add_attr(self.transform_red)
+            self.viewer.add_geom(self.red_ball)
 
             # Green
-            green = rendering.make_circle(radius)
-            green.set_color(0, 99, 0)
-            transform = rendering.Transform(translation=self.green_coordinates)
-            green.add_attr(transform)
-            self.viewer.add_geom(green)
+            self.green_ball = rendering.make_circle(radius)
+            self.green_ball.set_color(0, 99, 0)
+            self.transform_green = rendering.Transform(translation=self.green_coordinates)
+            self.green_ball.add_attr(self.transform_green)
+            self.viewer.add_geom(self.green_ball)
 
             # Blue
-            blue = rendering.make_circle(radius)
-            blue.set_color(0, 0, 19)
-            transform = rendering.Transform(translation=self.blue_coordinates)
-            blue.add_attr(transform)
-            self.viewer.add_geom(blue)
+            self.blue_ball = rendering.make_circle(radius)
+            self.blue_ball.set_color(0, 0, 19)
+            self.transform_blue = rendering.Transform(translation=self.blue_coordinates)
+            self.blue_ball.add_attr(self.transform_blue)
+            self.viewer.add_geom(self.blue_ball)
 
             """
             Goal Task 
             """
             self._draw_task_frame(START_X, tol_height + increment)
             self._add_goal_task()
+        else:
+
+            self.transform_red.set_translation(self.red_coordinates[0], self.red_coordinates[1])
+            self.transform_green.set_translation(self.green_coordinates[0], self.green_coordinates[1])
+            self.transform_blue.set_translation(self.blue_coordinates[0], self.blue_coordinates[1])
+            self.active_task_label.text = f'Current state of the active task: {self.state}'
 
         return self.viewer.render()
 
