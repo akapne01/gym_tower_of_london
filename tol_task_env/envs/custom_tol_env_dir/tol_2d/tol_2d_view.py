@@ -6,7 +6,7 @@ from envs.custom_tol_env_dir.tol_2d.state import XYPositions
 """
 CONSTANTS AND VARIABLES
 """
-WINDOW_WIDTH = 1000
+WINDOW_WIDTH = 700
 WINDOW_HEIGHT = 700
 TOL_RATIO = 2 / 3
 PADDING = 50
