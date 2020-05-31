@@ -1,4 +1,5 @@
 import random
+import time
 from typing import Tuple, List
 
 import gym
@@ -284,8 +285,10 @@ class ToLTaskEnv(gym.Env):
             self.reward = self._calculate_reward(action)
             self.state = action
             self.counter += 1
+            time.sleep(1)
             if self.is_game_complete():
                 self.is_done = True
+
 
         self.info = {
             'initial_state': self._initial_state,
@@ -310,10 +313,13 @@ class ToLTaskEnv(gym.Env):
         observation (object): The initial observation for the new episode after reset
         :return:
         """
-        # Implement your reset method here
-        # return observation
-        observation = None
-        return observation
+        self.state = self._initial_state
+        self.counter = 0
+        self.reward = 0
+        self.info = None
+        # self.viewer = None
+        self.is_done = False
+        return self.state
 
     def render(self, mode='human', close=False):
 
@@ -424,6 +430,11 @@ class ToLTaskEnv(gym.Env):
 
 
 class DrawText:
+    """
+    Class to be able to add Labels with text on the canvas
+    screen
+    """
+
     def __init__(self, label: pyglet.text.Label):
         self.label = label
 
