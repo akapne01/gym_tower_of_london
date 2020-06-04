@@ -45,6 +45,7 @@ class ToLTaskEnv(gym.Env):
         self.__version__ = "0.0.1"
         self.observation_space = gym.spaces.MultiDiscrete([(1, 6), (1, 6)])
         self.viewer = None
+        self.delay = 1
         # Goal Task
         self.goal_positions = state_ball_mapper.get(self.goal_state)
 
@@ -285,7 +286,7 @@ class ToLTaskEnv(gym.Env):
             self.reward = self._calculate_reward(action)
             self.state = action
             self.counter += 1
-            time.sleep(1)
+            time.sleep(self.delay)
             if self.is_game_complete():
                 self.is_done = True
 
