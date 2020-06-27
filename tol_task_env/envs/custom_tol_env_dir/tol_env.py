@@ -1,10 +1,12 @@
 import random
+import sys
 import time
 from typing import Tuple, List
 
 import gym
 import pyglet
 from envs.custom_tol_env_dir.tol_2d.ball_coordinates_grid import state_ball_mapper
+from envs.custom_tol_env_dir.tol_2d.mapping import int_to_state, state_to_int
 from envs.custom_tol_env_dir.tol_2d.state import TolState
 from envs.custom_tol_env_dir.tol_2d.tol_2d_view import rod1_line_coordinates, \
     rod2_line_coordinates, rod3_line_coordinates, horizontal_line_coordinates, active_ball_coordinates, \
@@ -14,10 +16,18 @@ from gym.envs.classic_control import rendering
 """
 CONSTANTS
 """
-COLOUR_NO = 0
-ARRANGEMENT_NO = 1
 MIN = 1
 MAX = 6
+
+MIN_MOVES = {
+    (53, 14): 4,
+    (11, 52): 5,
+    (34, 56): 5,
+    (46, 16): 6,
+    (33, 52): 6,
+    (13, 32): 6,
+    (16, 25): 4
+}
 
 
 class ToLTaskEnv(gym.Env):
@@ -25,7 +35,7 @@ class ToLTaskEnv(gym.Env):
         'render.modes': ['human'],
     }
 
-    def __init__(self, start_state=(1, 6), goal_state=(2, 5)):
+    def __init__(self, start_state=16, goal_state=25):
         """
         Action space: Represented as (colour permutation number, arrangement number)
         Colour Permutation Number: there are 6 different ways how 3 colour balls can be
@@ -34,9 +44,10 @@ class ToLTaskEnv(gym.Env):
         task spatially.
         """
         super(ToLTaskEnv, self).__init__()
-        self._initial_state = TolState(start_state[0], start_state[1])
-        self.state = TolState(start_state[0], start_state[1])
-        self.goal_state = TolState(goal_state[0], goal_state[1])
+
+        self._initial_state = start_state
+        self.state = start_state
+        self.goal_state = goal_state
 
         self.counter = 0
         self.is_done = False
@@ -46,9 +57,8 @@ class ToLTaskEnv(gym.Env):
         self.observation_space = gym.spaces.MultiDiscrete([(1, 6), (1, 6)])
         self.viewer = None
         self.delay = 1
-        # Goal Task
-        self.goal_positions = state_ball_mapper.get(self.goal_state)
-
+        self.goal_positions = state_ball_mapper.get(int_to_state.get(self.goal_state))
+        self.min_moves = MIN_MOVES.get((self._initial_state, self.goal_state))
         self.goal_red = self.goal_positions.red
         self.goal_green = self.goal_positions.green
         self.goal_blue = self.goal_positions.blue
@@ -68,7 +78,7 @@ class ToLTaskEnv(gym.Env):
 
     @property
     def ball_positions(self):
-        return state_ball_mapper.get(self.state)
+        return state_ball_mapper.get(int_to_state.get(self.state))
 
     @property
     def red_coordinates(self):
@@ -128,59 +138,60 @@ class ToLTaskEnv(gym.Env):
         Action space is dependant from current state
         :return: List of tuples that represent actions that can be taken
         """
-        color_permutation_no = self.state.permutation_no
-        arrangement = self.state.arrangement_number
+        color_permutation_no = int_to_state.get(self.state).permutation_no
+        arrangement = int_to_state.get(self.state).arrangement_number
         possible_actions = {
-            1: [TolState(color_permutation_no, 2),
-                TolState(color_permutation_no, 3)],
+            1: [(color_permutation_no * 10 + 2),
+                (color_permutation_no * 10 + 3)],
 
-            2: [TolState(color_permutation_no, 1),
-                TolState(color_permutation_no, 3),
-                TolState(
+            2: [(color_permutation_no * 10 + 1),
+                (color_permutation_no * 10 + 3),
+
+                state_to_int.get(TolState(
                     (self.clamp(color_permutation_no - 1),
                      self.clamp(color_permutation_no + 1)
                      )[color_permutation_no % 2 == 1], 5
-                )
+                ))
                 ],
 
-            3: [TolState(color_permutation_no, 1),
-                TolState(color_permutation_no, 2),
-                TolState(color_permutation_no, 4),
-                TolState(color_permutation_no, 5)],
+            3: [(color_permutation_no * 10 + 1),
+                (color_permutation_no * 10 + 2),
+                (color_permutation_no * 10 + 4),
+                (color_permutation_no * 10 + 5)],
 
-            4: [TolState(color_permutation_no, 3),
-                TolState(color_permutation_no, 5),
-                TolState(
+            4: [(color_permutation_no * 10 + 3),
+                (color_permutation_no * 10 + 5),
+                state_to_int.get(TolState(
 
                     (self.clamp(color_permutation_no + 1), self.clamp(color_permutation_no - 1),
                      )[color_permutation_no % 2 == 1], 6
-                )
+                ))
                 ],
 
-            5: [TolState(color_permutation_no, 3),
-                TolState(color_permutation_no, 4),
-                TolState(color_permutation_no, 6),
-                TolState(
+            5: [(color_permutation_no * 10 + 3),
+                (color_permutation_no * 10 + 4),
+                (color_permutation_no * 10 + 6),
+                state_to_int.get(TolState(
 
                     (self.clamp(color_permutation_no - 1),
                      self.clamp(color_permutation_no + 1)
                      )[color_permutation_no % 2 == 1], 2
-                )
+                ))
                 ],
 
-            6: [TolState(color_permutation_no, 5),
-                TolState(
+            6: [(color_permutation_no * 10 + 5),
+                state_to_int.get(TolState(
 
                     (self.clamp(color_permutation_no + 1),
                      self.clamp(color_permutation_no - 1)
                      )[color_permutation_no % 2 == 1], 4
-                )
+                ))
                 ]
 
         }[arrangement]
         return possible_actions
 
-    def __find_closest_goal_arrangement_action(self) -> Tuple:
+    def __find_closest_goal_arrangement_action(self) -> int:
         """
         Helper function to find out the one action from the action space
         should be rewarded based in ball arrangement number. Finds action
@@ -189,18 +200,19 @@ class ToLTaskEnv(gym.Env):
         :return: Action from the action space
         """
         result = None
-        candidates = [a for a in self.action_space if a[COLOUR_NO] == self.goal_state[COLOUR_NO]]
+        candidates = [a for a in self.action_space if a // 10 == self.goal_state // 10]
         if len(candidates) == 1:
             result = candidates[0]
         else:
-            closest_arrangement = min(candidates[ARRANGEMENT_NO],
-                                      key=lambda x: abs(x - self.goal_state[ARRANGEMENT_NO]))
+            candidates = [a % 10 for a in candidates]
+            closest_arrangement = min(candidates, key=lambda x: abs(x - self.goal_state % 10))
+
             for action in candidates:
-                if action[ARRANGEMENT_NO] == closest_arrangement:
+                if action % 10 == closest_arrangement:
                     result = action
         return result
 
-    def __find_closest_goal_colour_action(self) -> Tuple:
+    def __find_closest_goal_colour_action(self) -> int:
         """
         Helper function to find out which action from action space
         should be rewarded based on colour permutation number. The
@@ -208,14 +220,15 @@ class ToLTaskEnv(gym.Env):
         goal permutation number is rewarded.
         :return: Action from the action space
         """
-        closest_colour = min(self.action_space[COLOUR_NO], key=lambda x: abs(x - self.goal_state[COLOUR_NO]))
+        action_space_colours = [a // 10 for a in self.action_space]
+        closest_colour = min(action_space_colours, key=lambda x: abs(x - self.goal_state // 10))
         for action in self.action_space:
-            if action[COLOUR_NO] == closest_colour:
+            if action // 10 == closest_colour:
                 return action
             else:
-                return None
+                return 0
 
-    def _get_rewarded_action(self) -> Tuple:
+    def _get_rewarded_action(self) -> int:
         """
         Gets all actions from the action space and determines
         which action leads closer to the goal state and, therefore,
@@ -226,14 +239,14 @@ class ToLTaskEnv(gym.Env):
         if is_goal_in_action_space:
             return self.goal_state
 
-        goal_colour_no = self.goal_state[COLOUR_NO]
-        has_actions_with_goal_colour_no = goal_colour_no in [a[COLOUR_NO] for a in self.action_space]
+        goal_colour_no = self.goal_state // 10
+        has_actions_with_goal_colour_no = goal_colour_no in [a // 10 for a in self.action_space]
 
         if has_actions_with_goal_colour_no:
             return self.__find_closest_goal_arrangement_action()
         return self.__find_closest_goal_colour_action()
 
-    def _calculate_reward(self, action: Tuple) -> int:
+    def _calculate_reward(self, action: int) -> int:
         """
         Only one action from all the possible actions that can be taken
         has a positive reward. All other actions have a negative reward.
@@ -251,6 +264,8 @@ class ToLTaskEnv(gym.Env):
         :return: +100 if action is rewarded, -100 is not
         """
         action_to_reward = self._get_rewarded_action()
+        print(f'Action to reward: {action_to_reward}')
+        print(f'Action is {action}')
         if action == action_to_reward:
             print('Reward: +100')
             return +100
@@ -258,17 +273,44 @@ class ToLTaskEnv(gym.Env):
             print('Reward: -100')
             return -100
 
-    def get_random_action(self) -> Tuple:
+    def get_reward(self, action):
+        a = int_to_state.get(action)
+        red, green, blue = state_ball_mapper.get(a)
+        goal = int_to_state.get(self.goal_state)
+        red_goal, green_goal, blue_goal = state_ball_mapper.get(goal)
+        balls_in_goal_place = 0
+        if red == red_goal:
+            balls_in_goal_place += 1
+
+        if green == green_goal:
+            balls_in_goal_place += 1
+
+        if blue == blue_goal:
+            balls_in_goal_place += 1
+
+        if balls_in_goal_place == 3:
+            if self.counter == self.min_moves:
+                return 100
+            return 1.0
+        if balls_in_goal_place == 2:
+            return 0.75
+
+        if balls_in_goal_place == 1:
+            return 0.5
+
+        return 0
+
+    def get_random_action(self) -> int:
         """
         Randomly returns an action from action space
-        :return: TolState Tuple
+        :return: int
         """
         return random.choice(self.action_space)
 
     def is_game_complete(self):
         return self.state == self.goal_state
 
-    def step(self, action: Tuple) -> Tuple:
+    def step(self, action: int) -> Tuple:
         """
         Runs one time-step of the environment's dynamics. The reset() method is called at the end of every episode
         :param action: The action to be executed in the environment
@@ -283,13 +325,12 @@ class ToLTaskEnv(gym.Env):
                 a dictionary containing additional information about the previous action
         """
         if not self.is_done:
-            self.reward = self._calculate_reward(action)
-            self.state = action
             self.counter += 1
+            self.reward = self.get_reward(action)
+            self.state = action
             time.sleep(self.delay)
             if self.is_game_complete():
                 self.is_done = True
-
 
         self.info = {
             'initial_state': self._initial_state,
@@ -299,7 +340,8 @@ class ToLTaskEnv(gym.Env):
             'red_position': self.red,
             'green_position': self.green,
             'blue_position': self.blue,
-            'count': self.counter
+            'count': self.counter,
+            'min_moves': self.min_moves
         }
         print(f'Returning action={action}, reward={self.reward}, is_done={self.is_done}, info={self.info} ')
         print()
@@ -318,7 +360,6 @@ class ToLTaskEnv(gym.Env):
         self.counter = 0
         self.reward = 0
         self.info = None
-        # self.viewer = None
         self.is_done = False
         return self.state
 
@@ -428,6 +469,11 @@ class ToLTaskEnv(gym.Env):
                                                  )
         self.goal_task_label.draw()
         self.viewer.add_geom(DrawText(self.goal_task_label))
+
+    def close(self):
+        print(f'In close, {self.viewer}')
+        if self.viewer and sys.meta_path:
+            self.viewer.close()
 
 
 class DrawText:
