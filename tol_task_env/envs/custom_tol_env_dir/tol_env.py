@@ -327,24 +327,26 @@ class ToLTaskEnv(gym.Env):
         if not self.is_done:
             self.counter += 1
             self.reward = self.get_reward(action)
+            action_meaning = self.get_action_meaning(self.state, action)
             self.state = action
             time.sleep(self.delay)
             if self.is_game_complete():
                 self.is_done = True
 
-        self.info = {
-            'initial_state': self._initial_state,
-            'state': self.state,
-            'goal_state': self.goal_state,
-            'action_space': self.action_space,
-            'red_position': self.red,
-            'green_position': self.green,
-            'blue_position': self.blue,
-            'count': self.counter,
-            'min_moves': self.min_moves
-        }
-        print(f'Returning action={action}, reward={self.reward}, is_done={self.is_done}, info={self.info} ')
-        print()
+            self.info = {
+                'initial_state': self._initial_state,
+                'state': self.state,
+                'goal_state': self.goal_state,
+                'action_space': self.action_space,
+                'red_position': self.red,
+                'green_position': self.green,
+                'blue_position': self.blue,
+                'count': self.counter,
+                'min_moves': self.min_moves,
+                'action': action_meaning
+            }
+            print(f'Returning action={action}, reward={self.reward}, is_done={self.is_done}, info={self.info} ')
+            print()
         return action, self.reward, self.is_done, self.info
 
     def reset(self):
@@ -469,6 +471,51 @@ class ToLTaskEnv(gym.Env):
                                                  )
         self.goal_task_label.draw()
         self.viewer.add_geom(DrawText(self.goal_task_label))
+
+    def get_action_meaning(self, s1, s2):
+        s1 = int_to_state.get(s1)
+        s2 = int_to_state.get(s2)
+        r1, g1, b1 = state_ball_mapper.get(s1)
+        r2, g2, b2 = state_ball_mapper.get(s2)
+        red_moved = r2 - r1 != 0
+        green_moved = g2 - g1 != 0
+        blue_moved = b2 - b1 != 0
+        colour = ''
+        rod_from = ''
+        rod_to = ''
+        arr1 = None
+        arr2 = None
+
+        if red_moved:
+            colour = 'R'
+            arr1, arr2 = r1 % 10, r2 % 10
+            rod_from = self.get_rod_letter(r1)
+            rod_to = self.get_rod_letter(r2)
+
+        if green_moved:
+            colour = 'G'
+            arr1, arr2 = g1 % 10, g2 % 10
+            rod_from = self.get_rod_letter(g1)
+            rod_to = self.get_rod_letter(g2)
+
+        if blue_moved:
+            colour = 'B'
+            arr1, arr2 = b1 % 10, b2 % 10
+            rod_from = self.get_rod_letter(b1)
+            rod_to = self.get_rod_letter(b2)
+
+        action = f'[{colour} {rod_from}{arr1} -> {colour} {rod_to}{arr2}]'
+        return action
+
+    def get_rod_letter(self, position):
+        rod = position // 10
+        if rod == 1:
+            return 'L'
+        if rod == 2:
+            return 'C'
+        if rod == 3:
+            return 'R'
+        return None
 
     def close(self):
         print(f'In close, {self.viewer}')
