@@ -45,7 +45,7 @@ class ToLTaskEnv(gym.Env):
         """
         super(ToLTaskEnv, self).__init__()
 
-        self._initial_state = start_state
+        self.initial_state = start_state
         self.state = start_state
         self.goal_state = goal_state
 
@@ -58,7 +58,7 @@ class ToLTaskEnv(gym.Env):
         self.viewer = None
         self.delay = 1
         self.goal_positions = state_ball_mapper.get(int_to_state.get(self.goal_state))
-        self.min_moves = MIN_MOVES.get((self._initial_state, self.goal_state))
+        self.min_moves = MIN_MOVES.get((self.initial_state, self.goal_state))
         self.goal_red = self.goal_positions.red
         self.goal_green = self.goal_positions.green
         self.goal_blue = self.goal_positions.blue
@@ -334,7 +334,7 @@ class ToLTaskEnv(gym.Env):
                 self.is_done = True
 
             self.info = {
-                'initial_state': self._initial_state,
+                'initial_state': self.initial_state,
                 'state': self.state,
                 'goal_state': self.goal_state,
                 'action_space': self.action_space,
@@ -358,7 +358,7 @@ class ToLTaskEnv(gym.Env):
         observation (object): The initial observation for the new episode after reset
         :return:
         """
-        self.state = self._initial_state
+        self.state = self.initial_state
         self.counter = 0
         self.reward = 0
         self.info = None
