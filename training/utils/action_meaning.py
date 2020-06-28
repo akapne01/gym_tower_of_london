@@ -1,4 +1,4 @@
-from envs.utils.planning_helper import state_ball_mapper
+from training.utils.planning_helper import state_ball_mapper
 
 
 def get_action_meaning(s1, s2):
