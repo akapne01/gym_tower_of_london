@@ -8,7 +8,7 @@ from anytree import Node
 from anytree.exporter import DotExporter
 
 from training.utils.planning_helper import get_possible_actions
-from training.utils.tree_methods import construct_reward_planning_tree, calculate_weighted_reward
+from training.utils.tree_methods import calculate_weighted_reward
 
 """
 Parameters
@@ -18,14 +18,17 @@ alpha = 0.5
 gamma = 0.5
 lambda_ = 0.5
 
+# Max possible reward to episode.
+c_p = 110
+
 
 class SarsaUCTIteration:
     visited_states = set()
 
     def __init__(self, environment):
-        self.tree = construct_reward_planning_tree(state=environment.state, goal_state=environment.goal_state,
-                                                   start_position=environment.initial_state,
-                                                   moves_made=environment.counter)
+        # self.tree = construct_reward_planning_tree(state=environment.state, goal_state=environment.goal_state,
+        #                                            start_position=environment.initial_state,
+        #                                            moves_made=environment.counter)
         self.env = environment
 
     def generate_episode(self, state: int) -> List:
@@ -94,15 +97,29 @@ class SarsaUCTIteration:
         :param state:
         :return:
         """
+        # aim is to apply multi armed bandit problem for each action separately
 
         # loop through possible actions
         for action in self.get_possible_actions(state):
+
             # if state is visited; then normalize and calculate q
             if action in self.visited_states:
-                pass
+                # tee(s_i).V
+                v = 1
+                value_norm = self.normalize(v)
             else:
                 pass
         return 0
+
+    def normalize(self, value):
+        """
+        UCB1 selection policy requires values normalized in the
+        interval [0, 1].
+        :param value:
+        :return:
+        """
+        print('Returning', value / c_p)
+        return value / c_p
 
     def get_possible_actions(self, state: int) -> List:
         """
@@ -165,6 +182,3 @@ if __name__ == '__main__':
     state = env.reset()
     # env.render()
     # rl.generate_episode(env=env, state=state)
-    tree = construct_reward_planning_tree(state=env.state, goal_state=env.goal_state, start_position=env.initial_state,
-                                          moves_made=env.counter)
-    save_tree(tree)
