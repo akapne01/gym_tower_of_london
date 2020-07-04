@@ -1,1 +1,1 @@
-from envs.custom_tol_env_dir.tol_env import ToLTaskEnv
+from envs.custom_tol_env_dir.tol_env import ToLTaskEnv, ToLTaskRewardsAfterCompletedEnv
