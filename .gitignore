@@ -16,3 +16,11 @@ var/
 /.ipynb_checkpoints/
 /sandbox/
 /tol_task_env/sandbox/
+/training/CSV/
+/training/images/
+/training/run_simulations/A/
+/training/run_simulations/B/
+/training/run_simulations/C/
+/training/run_simulations/D/
+/training/run_simulations/E/
+/training/run_simulations/NA/

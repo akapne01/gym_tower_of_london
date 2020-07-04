@@ -26,7 +26,12 @@ MIN_MOVES = {
     (46, 16): 6,
     (33, 52): 6,
     (13, 32): 6,
-    (16, 25): 4
+    (16, 25): 4,
+    (24, 66): 5,
+    (33, 54): 4,
+    (23, 62): 6,
+    (16, 46): 6,
+    (51, 32): 5,
 }
 
 
@@ -73,6 +78,7 @@ class ToLTaskEnv(gym.Env):
         self.transform_red = None
         self.transform_green = None
         self.transform_blue = None
+        self.no_goal_positions = self.no_in_positions(self.state)
 
         print('Env initialized')
 
@@ -274,11 +280,42 @@ class ToLTaskEnv(gym.Env):
             return -100
 
     def get_reward(self, action):
+        """
+        Positive reward when any of the balls are put in the
+        goal position. Negative reward when any of the balls
+        that was before in goal position is moved away
+        :param action:
+        :return:
+        """
+        before = self.no_goal_positions
+        balls_in_goal_place = self.no_in_positions(action)
+        self.no_goal_positions = balls_in_goal_place
+        print('Before', before)
+        print('Balls in goal', balls_in_goal_place)
+        moves_made = self.counter
+        if action == self.goal_state:
+            if self.counter == self.min_moves:
+                return 100 / moves_made
+            return 1 / moves_made
+        if balls_in_goal_place > before:
+            return 0.25 / moves_made
+        elif balls_in_goal_place == before:
+            return 0
+        else:
+            return (-1) * 0.25 / moves_made
+
+    def no_in_positions(self, action):
+        # get current ball positions
         a = int_to_state.get(action)
         red, green, blue = state_ball_mapper.get(a)
+
+        # get goal ball positions
         goal = int_to_state.get(self.goal_state)
         red_goal, green_goal, blue_goal = state_ball_mapper.get(goal)
+
+        # Init counter
         balls_in_goal_place = 0
+
         if red == red_goal:
             balls_in_goal_place += 1
 
@@ -287,18 +324,7 @@ class ToLTaskEnv(gym.Env):
 
         if blue == blue_goal:
             balls_in_goal_place += 1
-
-        if balls_in_goal_place == 3:
-            if self.counter == self.min_moves:
-                return 100
-            return 1.0
-        if balls_in_goal_place == 2:
-            return 0.75
-
-        if balls_in_goal_place == 1:
-            return 0.5
-
-        return 0
+        return balls_in_goal_place
 
     def get_random_action(self) -> int:
         """
