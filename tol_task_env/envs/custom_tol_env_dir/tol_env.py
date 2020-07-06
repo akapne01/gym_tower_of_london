@@ -554,12 +554,12 @@ class ToLTaskRewardsAfterCompletedEnv(ToLTaskEnv):
     def __init__(self, start_state=16, goal_state=25):
         super().__init__(start_state=start_state, goal_state=goal_state)
 
-    def get_reward(self, action):
+    def get_reward(self, action) -> float:
         if action == self.goal_state:
             if self.counter == self.min_moves:
-                return 100
-            return 1
-        return 0
+                return 100.0
+            return 1.0
+        return 0.0
 
 
 class DrawText:
