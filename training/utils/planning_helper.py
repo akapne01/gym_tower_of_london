@@ -1,6 +1,48 @@
+import random
+from typing import List
+
+import numpy as np
+from networkx.tests.test_convert_pandas import pd
+
 from envs.custom_tol_env_dir import ToLTaskEnv
 from envs.custom_tol_env_dir.tol_2d.mapping import int_to_state, state_to_int
 from envs.custom_tol_env_dir.tol_2d.state import TolState
+# from training.utils.tree_methods import plan_for_best_actions
+
+FILL_VALUE = -100
+
+
+
+
+def init_q_table():
+    poss_states = 36
+    poss_actions = 36
+    q_table = pd.DataFrame(np.array([[FILL_VALUE] * poss_actions] * poss_states))
+    int_states = int_to_state.keys()  # contains all possible states
+    q_table.index = int_states
+    q_table.columns = int_states
+    for i in int_states:
+        actions = get_possible_actions(i)
+        for a in actions:
+            q_table.loc[a, i] = 0
+    return q_table
+
+
+def get_best_Q(state, Q) -> List:
+    max_q = 0
+    max_a = 0
+    best = []
+    # all possible actions
+    actions = get_possible_actions(state)
+    df = Q.loc[actions]
+    max_s = df[state].max()
+    print(f'# get_best_Q :  state={state} ; max={max_s}')
+    for a in actions:
+        value = Q.loc[a, state]
+        if value == max_s:
+            best.append(a)
+    print(f'# get_best_Q: the best action returned is {best}')
+    return best
 
 
 def get_possible_actions(state):

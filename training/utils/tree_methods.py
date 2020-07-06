@@ -104,7 +104,7 @@ def plan_for_best_actions(state, tree):
 #     return plan_for_best_actions(tree, state)
 
 
-def add_level(nodes, g, start_position, goal_state, moves_made, states_in_tree) -> None:
+def add_level_end_reward(nodes, g, start_position, goal_state, moves_made, states_in_tree) -> None:
     """
     :param nodes: can be an int or a list
     :param g: graph
@@ -114,35 +114,40 @@ def add_level(nodes, g, start_position, goal_state, moves_made, states_in_tree) 
     :param states_in_tree: which states have already been added to the tree
     """
     # nodes can be a state or a list of nodes
+
     if isinstance(nodes, list):
         for n in nodes:
-            add_one_level(n, g, start_position, goal_state, moves_made + 1, states_in_tree)
+            add_level_end_reward(n, g, start_position, goal_state, moves_made + 1, states_in_tree)
     else:
         children = get_possible_actions(nodes)
         g.add_nodes_from(children)
         for a in children:
             if a in states_in_tree:
+                # print(f'Node {a} is already int the tree, continuing')
                 continue
-            # g.add_edge(nodes, a,
-            #            weight=calculate_weighted_reward(action=a, goal_state=goal_state, start_position=start_position,
-            #                                             moves_made=moves_made))
+            min_moves = get_min_no_moves(start_position, goal_state)
+            # print(f'# add_level_end_reward : adding reward for node {nodes}')
+            g.add_edge(nodes, a,
+                       weight=calculate_end_reward(nodes, goal_state, min_moves, moves_made))
+
         states_in_tree.update(children)
 
 
-def add_one_level(nodes, g, start_position, goal_state, moves_made, states_in_tree, n_goal) -> None:
+def add_one_level_step_reward(nodes, g, start_position, goal, moves_so_far, states_in_tree) -> None:
     """
+    Adds level with rewards on every step
     :param nodes: can be an int or a list
     :param g: graph
     :param start_position: start position of the problem
-    :param goal_state: goal state for the problem
-    :param moves_made: how many moves are simulated
+    :param goal: goal state for the problem
+    :param moves_so_far: how many moves are simulated
     :param states_in_tree: which states have already been added to the tree
     """
 
     # nodes can be a state or a list of nodes
     if isinstance(nodes, list):
         for n in nodes:
-            add_one_level(n, g, start_position, goal_state, moves_made + 1, states_in_tree)
+            add_one_level_step_reward(n, g, start_position, goal, moves_so_far + 1, states_in_tree)
     else:
         children = get_possible_actions(nodes)
         g.add_nodes_from(children)
@@ -150,26 +155,19 @@ def add_one_level(nodes, g, start_position, goal_state, moves_made, states_in_tr
         """
         Loop through children and copy the q_values, visits and 
         """
-
+        n_goal = no_in_positions(nodes, goal)
         for a in children:
             if a in states_in_tree:
                 continue
             g.add_edge(nodes, a,
-                       weight=calculate_weighted_reward(action=a, goal_state=goal_state, start_position=start_position,
-                                                        moves_made=moves_made, n_goal_pos=n_goal))
-            # print(
-            #     'calculate_weighted_reward(action=a, goal_state=goal_state, start_position=start_position,moves_made=moves_made)')
-            # print('action', a)
-            # print('goal', goal_state)
-            # print('start', start_position)
-            # print('moves made', moves_made)
-            # print()
-
-        states_in_tree.update(children)
+                       weight=calculate_weighted_reward(action=a, goal_state=goal, start_position=start_position,
+                                                        moves_made=moves_so_far, n_goal_pos=n_goal))
+        # states_in_tree.update(children)
 
 
 def search_tree(state, depth, start_state, goal_state, moves_made):
     """
+    Searach tree that uses rewards applied at every step
 
     :param state:
     :param depth:
@@ -196,7 +194,7 @@ def search_tree(state, depth, start_state, goal_state, moves_made):
     """
     states = state
     n_goal = no_in_positions(state, goal_state)
-    add_one_level(states, g, start_state, goal_state, moves_made, states_in_tree, n_goal)
+    add_one_level_step_reward(states, g, start_state, goal_state, moves_made, states_in_tree, n_goal)
     moves_made += 1
     """
     Add higher level lookahead
@@ -207,7 +205,133 @@ def search_tree(state, depth, start_state, goal_state, moves_made):
         next_states = []
         for s in states:  # add one level for each of the child nodes
             n_goal = no_in_positions(s, goal_state)
-            add_one_level(s, g, start_state, goal_state, moves_made, states_in_tree, n_goal)
+            add_one_level_step_reward(s, g, start_state, goal_state, moves_made, states_in_tree, n_goal)
+            next_states.extend(get_possible_actions(s))
+        moves_made += 1
+        states = next_states
+    """
+    Add 3rd level lookahead
+    """
+    # next_states = []
+    # for s in states:
+    #     print('3rd level lookahead')
+    #     print('s:', s)
+    #     add_one_level(s, g, start_state, goal_state, moves_made, states_in_tree)
+    #     next_states.extend(get_possible_actions(s))
+    # print('After Level 3:')
+
+    """
+    Plot graph 
+    """
+    #
+    # pos = nx.spring_layout(g)
+    # # pos = nx.planar_layout(g)
+    # nx.draw_networkx_nodes(g, pos,
+    #                        cmap=plt.get_cmap('jet'),
+    #                        node_size=500)
+    # nx.draw_networkx_labels(g, pos)
+    # labels = nx.get_edge_attributes(g, 'weight')
+    # print('Labels are', labels)
+    #
+    # nx.draw_networkx_edge_labels(g, pos, edge_labels=labels)
+    # nx.draw_networkx_edges(g, pos, edge_color='b', arrows=True)
+    # plt.show()
+    #
+
+    # Tree
+    # T = nx.full_rary_tree(create_using=g)
+    #
+    # pos = graphviz_layout(T, prog="dot")
+    # nx.draw(T, pos)
+    # plt.show()
+    return g
+
+
+def search_graph(state, depth, start_state, goal_state, moves_made):
+    """
+    Searach tree that uses rewards applied at the end of the game
+
+    :param state:
+    :param depth:
+    :param start_state:
+    :param goal_state:
+    :param moves_made:
+    :param n_goal: number of balls in the goal position
+    :return:
+    """
+    # create graph
+    # g = nx.DiGraph()
+    g = nx.Graph()
+
+    # States that are added to the tree are saved in this set
+    states_in_tree = set()
+    states_in_tree.add(state)
+    """
+    Add current node
+    """
+    g.add_node(state)
+    moves_made += 1
+    """
+    Add 1 level lookahead
+    """
+    states = state
+    # n_goal = no_in_positions(state, goal_state)
+    add_one_level_step_reward(states, g, start_state, goal_state, moves_made, states_in_tree)
+    moves_made += 1
+    """
+    Add higher level lookahead
+    """
+    states = get_possible_actions(state)
+
+    for i in range(depth - 1):
+        next_states = []
+        for s in states:  # add one level for each of the child nodes
+            add_one_level_step_reward(s, g, start_state, goal_state, moves_made, states_in_tree)
+            next_states.extend(get_possible_actions(s))
+        moves_made += 1
+        states = next_states
+    return g
+
+
+def search_tree_end_rewards(state, depth, start_state, goal_state, moves_made):
+    """
+    Searach tree that uses rewards applied at the end of the game
+
+    :param state:
+    :param depth:
+    :param start_state:
+    :param goal_state:
+    :param moves_made:
+    :param n_goal: number of balls in the goal position
+    :return:
+    """
+    # create graph
+    g = nx.DiGraph()
+
+    # States that are added to the tree are saved in this set
+    states_in_tree = set()
+    states_in_tree.add(state)
+    """
+    Add current node
+    """
+    g.add_node(state)
+    moves_made += 1
+    """
+    Add 1 level lookahead
+    """
+    states = state
+    # n_goal = no_in_positions(state, goal_state)
+    add_level_end_reward(states, g, start_state, goal_state, moves_made, states_in_tree)
+    moves_made += 1
+    """
+    Add higher level lookahead
+    """
+    states = get_possible_actions(state)
+
+    for i in range(depth - 1):
+        next_states = []
+        for s in states:  # add one level for each of the child nodes
+            add_level_end_reward(s, g, start_state, goal_state, moves_made, states_in_tree)
             next_states.extend(get_possible_actions(s))
         moves_made += 1
         states = next_states
@@ -322,6 +446,21 @@ def draw_problem_space() -> None:
     nx.draw_networkx_labels(G, pos)
     nx.draw_networkx_edges(G, pos, edge_color='b', arrows=True)
     plt.show()
+
+
+def calculate_end_reward(action: int, goal: int, min_moves: int, move_count: int) -> float:
+    # print(f'# calculate_end_reward: action={action}, goal={goal}, min_moves={min_moves}, move_count={move_count}')
+    actions_to_reward = get_possible_actions(goal)
+    # print(f'# calculate_end_reward: actions to reward: {actions_to_reward}')
+    if action in actions_to_reward:
+        # if action == goal:
+        if move_count == min_moves:
+            # print('# calculate_end_reward : returning 100')
+            return 100.0
+        # print('# calculate_end_reward : returning 1')
+        return 1.0
+    # print('# calculate_end_reward : returning 0')
+    return 0.0
 
 
 def calculate_weighted_reward(action: int, goal_state: int, start_position: int, moves_made: int,
@@ -462,50 +601,9 @@ if __name__ == '__main__':
     state = i
     # tree = nx.dfs_tree(G, 33)
     # n_goal = no_in_positions(state, goal_state)
-    tree = search_tree(state, depth, start_state, goal_state, moves_made)
-
-
-    def find_max2(tree, state):
-        """
-        Uses depth first search to find the max
-        value in the tree that is underneath state
-        :param tree: tree
-        :param state: int
-        :return: maximum future reward
-        """
-        max = 0
-        for a, b in nx.dfs_edges(tree, state):
-            value = tree[a][b]['weight']
-            if value > max:
-                max = value
-        print('find_max2: After travesing the tree, max value is', max)
-        return max
-
-
-    def plan_for_best_actions2(tree, state):
-        """
-        Traverses the tree and returns list representing
-        the next possible actions that yield the highest
-        reward.
-        :param tree: look-ahead tree of certain depth
-        constructed with rewards added for each state
-        :param state: int
-        :return: List
-        """
-        max_planned = 0
-        best_children = []
-        for node in tree.neighbors(state):
-            value = find_max(tree, node)
-            if value > max_planned and node != state:
-                max_planned = value
-                best_children.append(node)
-        print('## plan_for_best_actions returns:', best_children)
-        return best_children
-
-
-    print('Find_MAX Max value returned:', find_max(tree, 33))
-    print('#plan_for_best_actions returns:', plan_for_best_actions(tree, 32))
-
+    # tree = search_tree(state, depth, start_state, goal_state, moves_made)
+    # tree = search_tree_end_rewards(state, 4, start_state, goal_state, moves_made)
+    tree = search_graph(state, depth, start_state, goal_state, moves_made)
     # print(tree)
 
     # Finding which of the actions have a better reward:
@@ -520,8 +618,8 @@ if __name__ == '__main__':
     # nx.draw_networkx_edges(G, pos, edge_color='green', arrows=True)
 
     # To draw a tree
-    pos = hierarchy_pos(tree, state)
-    # pos = nx.spring_layout(tree, state)
+    # pos = hierarchy_pos(tree, state)
+    pos = nx.spring_layout(tree, state)
     nx.draw(tree, pos=pos, with_labels=True, node_size=600, node_color='lightgreen')
     #
     labels = nx.get_edge_attributes(tree, 'weight')

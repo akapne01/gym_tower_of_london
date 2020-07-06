@@ -9,41 +9,8 @@ import gym
 import numpy as np
 from networkx.tests.test_convert_pandas import pd
 
-# from training.qlearning_demo import greedy_planning_look_ahead, init_q_table
-
-from training.utils.mapping import int_to_state
-from training.utils.planning_helper import get_possible_actions
+from training.utils.planning_helper import init_q_table, get_best_Q
 from training.utils.tree_methods import search_tree, plan_for_best_actions
-
-FILL_VALUE = -100
-
-
-def init_q_table():
-    poss_states = 36
-    poss_actions = 36
-    q_table = pd.DataFrame(np.array([[FILL_VALUE] * poss_actions] * poss_states))
-    int_states = int_to_state.keys()  # contains all possible states
-    q_table.index = int_states
-    q_table.columns = int_states
-    for i in int_states:
-        actions = get_possible_actions(i)
-        for a in actions:
-            q_table.loc[a, i] = 0
-    return q_table
-
-
-def get_best_Q(state, Q):
-    max_q = 0
-    max_a = 0
-    best = []
-    actions = get_possible_actions(state)
-    max_s = Q[state].max()
-    for a in actions:
-        value = Q.loc[a, state]
-        if value == max_s:
-            best.append(a)
-    print('# get_best_Q:', best)
-    return best
 
 
 def greedy_planning_look_ahead(Q, env, state, tree):
@@ -133,15 +100,15 @@ def initialise() -> Tuple:
 
 
 def save_stats_csv(Q, letter, episodes, alpha, gamma, epsilon, depth, episode_moves, episode_reward, actions_taken,
-                   move_path_monitor, transition_times) -> None:
+                   move_path_monitor, transition_times, version) -> None:
     """
     Saves 2 CSV files:
     Q_values and training statistics. Parameters are saved in the CSV name
     """
-    q_value_path = f'{letter}/{letter}_DYNA_QVALUES_ep-{episodes}_al-{alpha}_gam-{gamma}_eps-{epsilon}_depth-{depth}_model_transitions-{transition_times}.csv'
-    Q.to_csv(q_value_path, index=False)
+    q_value_path = f'{letter}/{letter}_{version}_DYNA_QVALUES_ep-{episodes}_al-{alpha}_gam-{gamma}_eps-{epsilon}_depth-{depth}_model_transitions-{transition_times}.csv'
+    Q.to_csv(q_value_path)
 
-    stats_path = f'{letter}/{letter}_DYNA_episode-{episodes}_alpha-{alpha}_gamma-{gamma}_epsilon-{epsilon}_depth-{depth}.csv'
+    stats_path = f'{letter}/{letter}_{version}_DYNA_episode-{episodes}_alpha-{alpha}_gamma-{gamma}_epsilon-{epsilon}_depth-{depth}.csv'
     df = pd.DataFrame(data=episode_moves, columns=['MOVE_COUNT'])
     df['EPISODE_REWARDS'] = episode_reward
     df['ACTIONS_NUMBERS'] = actions_taken
@@ -158,9 +125,10 @@ def reset_episode():
 
 
 def dyna_with_lookahead(alpha: float, gamma: float, epsilon: float, episodes: int, max_steps: int, depth: int,
-                        render: bool, start: int, goal: int, transition_times=1, letter='NA') -> None:
+                        render: bool, start: int, goal: int, transition_times=1, letter='NA', version='v0') -> None:
     """
     Dyna Algorithm with possibility to look-ahead to simulate planning
+    :param version:
     :param alpha: step-size parameter
     :param gamma: discount-rate parameter
     :param epsilon: probability of taking a random action
@@ -175,7 +143,8 @@ def dyna_with_lookahead(alpha: float, gamma: float, epsilon: float, episodes: in
     """
     verbose = False
 
-    env = gym.make('TolTask-v0', start_state=start, goal_state=goal)
+    # env = gym.make('TolTask-v0', start_state=start, goal_state=goal)
+    env = gym.make('TolTask-v1', start_state=start, goal_state=goal)
     env.delay = 0
 
     Q, window, episode_reward, episode_moves, moves_counter, model, move_path_monitor, actions_taken = initialise()
@@ -204,7 +173,8 @@ def dyna_with_lookahead(alpha: float, gamma: float, epsilon: float, episodes: in
 
             action_value = info.get('action')
             path.append(action_value)
-            total_return += np.power(gamma, t) * reward
+            # total_return += np.power(gamma, t) * reward
+            total_return += reward
             a_prime = greedy_planning_look_ahead(Q, env, s_prime, tree)
 
             """
@@ -245,7 +215,7 @@ def dyna_with_lookahead(alpha: float, gamma: float, epsilon: float, episodes: in
     print(episode_moves)
     print('Epsilon values')
     save_stats_csv(Q, letter, episodes, alpha, gamma, epsilon, depth, episode_moves, episode_reward, actions_taken,
-                   move_path_monitor, transition_times)
+                   move_path_monitor, transition_times, version)
     print('Training Complete')
 
 
