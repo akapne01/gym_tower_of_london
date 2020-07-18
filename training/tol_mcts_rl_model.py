@@ -8,7 +8,7 @@ from anytree import Node
 from anytree.exporter import DotExporter
 
 from training.utils.planning_helper import get_possible_actions
-from training.utils.tree_methods import calculate_weighted_reward
+from training.utils.tree_methods import calculate_step_reward
 
 """
 Parameters
@@ -155,9 +155,9 @@ class SarsaUCTIteration:
         return action, reward, is_done, info
 
     def get_reward(self, action: int, moves_made: int) -> float:
-        return calculate_weighted_reward(action=action, goal_state=self.env.goal_state,
-                                         start_position=self.env.initial_state,
-                                         moves_made=moves_made)
+        return calculate_step_reward(action=action, goal_state=self.env.goal_state,
+                                     start_position=self.env.initial_state,
+                                     moves_made=moves_made)
 
 
 def save_tree(tree: Node) -> None:

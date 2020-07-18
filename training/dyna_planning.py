@@ -9,6 +9,7 @@ import gym
 import numpy as np
 from networkx.tests.test_convert_pandas import pd
 
+from training.run_simulations.parameters import LAST_MOVES_COUNT
 from training.utils.planning_helper import init_q_table, get_best_Q
 from training.utils.tree_methods import search_tree, plan_for_best_actions
 
@@ -32,25 +33,29 @@ def greedy_planning_look_ahead(Q, env, state, tree):
     print('# greedy_planning_look_ahead: Looking for the best action: ', state)
     if state in tree:
         actions = plan_for_best_actions(state, tree)
-        if actions is None or len(actions) > 1:
-            print('# greedy_planning_look_ahead: planning returned more than 1 action:', actions)
-            print('# greedy_planning_look_ahead:Getting the best Q value bacause of that')
-            actions = get_best_Q(state, Q)
-    else:
-        actions = get_best_Q(state, Q)
-    if len(actions) == 0:
-        a = env.get_random_action()
-        print('# greedy_planning_look_ahead: List is empty so have to take random action', a)
-        return a
-    # So far we have a list of action that may contain 1 or more action
-    if len(actions) == 1:
-        print('#greedy_planning_look_ahead#: Only 1 best action was found, returning this action', actions[0])
-        return actions[0]
-    else:
-        print('#greedy_planning_look_ahead#: There are several best actions', actions)
-        action = random.choice(actions)
-        print('#greedy_planning_look_ahead#: Randomly selecting one of the actions ', action)
-        return action
+        if len(actions) == 0:
+            return None
+        return random.choice(actions)
+    return None
+    # if actions is None or len(actions) > 1:
+    #     print('# greedy_planning_look_ahead: planning returned more than 1 action:', actions)
+    #     print('# greedy_planning_look_ahead:Getting the best Q value bacause of that')
+    #     actions = get_best_Q(state, Q)
+    # else:
+    #     actions = get_best_Q(state, Q)
+    # if len(actions) == 0:
+    #     a = env.get_random_action()
+    #     print('# greedy_planning_look_ahead: List is empty so have to take random action', a)
+    #     return a
+    # # So far we have a list of action that may contain 1 or more action
+    # if len(actions) == 1:
+    #     print('#greedy_planning_look_ahead#: Only 1 best action was found, returning this action', actions[0])
+    #     return actions[0]
+    # else:
+    #     print('#greedy_planning_look_ahead#: There are several best actions', actions)
+    #     action = random.choice(actions)
+    #     print('#greedy_planning_look_ahead#: Randomly selecting one of the actions ', action)
+    #     return action
 
 
 def q_learning_update(Q, s, a, r, s_prime, env, tree, gamma, alpha):
@@ -96,24 +101,42 @@ def initialise() -> Tuple:
     Q = init_q_table()
     window = deque(maxlen=100)
     model = dict()
-    return Q, window, [], [], [], model, [], []
+    return Q, window, [], [], [], model, [], [], []
 
 
 def save_stats_csv(Q, letter, episodes, alpha, gamma, epsilon, depth, episode_moves, episode_reward, actions_taken,
-                   move_path_monitor, transition_times, version) -> None:
+                   move_path_monitor, transition_times, version, min_moves, epsilon_monitor, pid=999):
     """
-    Saves 2 CSV files:
-    Q_values and training statistics. Parameters are saved in the CSV name
+    Saves CSV files:
+    Q_values and training moves and statistics. Parameters are saved in the CSV name
     """
-    q_value_path = f'{letter}/{letter}_{version}_DYNA_QVALUES_ep-{episodes}_al-{alpha}_gam-{gamma}_eps-{epsilon}_depth-{depth}_model_transitions-{transition_times}.csv'
+    params = f'ep-{episodes}_al-{alpha}_gam-{gamma}_eps-{epsilon}_depth-{depth}_model_transitions-{transition_times}-pid={pid}'
+    q_value_path = f'{letter}/{letter}_{version}_DYNA_QVALUES_{params}.csv'
     Q.to_csv(q_value_path)
 
-    stats_path = f'{letter}/{letter}_{version}_DYNA_episode-{episodes}_alpha-{alpha}_gamma-{gamma}_epsilon-{epsilon}_depth-{depth}.csv'
+    stats_path = f'{letter}/{letter}_{version}_DYNA_{params}.csv'
+    print(f'episode_moves={episode_moves} with len={len(episode_moves)}')
+    print(f'actions_taken={actions_taken} with len={len(actions_taken)}')
+    print(f'episode_reward={episode_reward} with len={len(episode_reward)}')
+    print(f'move_path_monitor={move_path_monitor} with len={len(move_path_monitor)}')
+
     df = pd.DataFrame(data=episode_moves, columns=['MOVE_COUNT'])
+    print(df)
     df['EPISODE_REWARDS'] = episode_reward
     df['ACTIONS_NUMBERS'] = actions_taken
     df['PATHS'] = move_path_monitor
+    df['EPSILON'] = epsilon_monitor
     df.to_csv(stats_path, index=False)
+
+    stats = pd.DataFrame(df.MOVE_COUNT.describe())
+    stats.loc['no_min_moves', 'MOVE_COUNT'] = np.sum(df.MOVE_COUNT == min_moves)
+    if len(df.MOVE_COUNT) > LAST_MOVES_COUNT:
+        df_last = df.tail(LAST_MOVES_COUNT)
+        col = f'LAST_{LAST_MOVES_COUNT}_MOVES'
+        stats[col] = df_last.MOVE_COUNT.describe()
+        stats.loc['no_min_moves', col] = np.sum(df_last.MOVE_COUNT == min_moves)
+    stats.to_csv(f'STATS/{letter}_statistics_{params}.csv')
+    return stats
 
 
 def reset_episode():
@@ -214,20 +237,7 @@ def dyna_with_lookahead(alpha: float, gamma: float, epsilon: float, episodes: in
     print('number_of_moves')
     print(episode_moves)
     print('Epsilon values')
-    save_stats_csv(Q, letter, episodes, alpha, gamma, epsilon, depth, episode_moves, episode_reward, actions_taken,
-                   move_path_monitor, transition_times, version)
+    pid_results = save_stats_csv(Q, letter, episodes, alpha, gamma, epsilon, depth, episode_moves, episode_reward,
+                                 actions_taken,
+                                 move_path_monitor, transition_times, version, env.min_moves)
     print('Training Complete')
-
-
-if __name__ == "__main__":
-    alpha = 0.5
-    gamma = 0.999
-    epsilon = 0.9
-    episodes = 1
-    max_steps = 500
-    depth = 4
-    transition_times = 1
-    s = 33
-    g = 54
-    dyna_with_lookahead(alpha, gamma, epsilon, episodes, max_steps, depth, render=True, start=s, goal=g,
-                        transition_times=1)

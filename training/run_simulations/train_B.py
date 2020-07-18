@@ -2,7 +2,7 @@ import time
 
 from training.dyna_plan_end_rewards import dyna_lookahead_heuristic
 from training.dyna_planning import dyna_with_lookahead
-from training.run_simulations.parameters import alpha, gamma, epsilon, max_steps, transition_times
+from training.run_simulations.parameters import alpha, gamma, epsilon, max_steps, transition_times, epsilon_decay
 
 """
 Experimental Problem B
@@ -11,9 +11,8 @@ start = 51
 goal = 32
 letter = 'B'
 
-episodes = 10000
+episodes = 1000
 # lookahead_depths = [1, 2, 3, 4]
-# lookahead_depths = [5, 6, 7]
 lookahead_depths = [1]
 
 time_per_depth = []
@@ -27,7 +26,8 @@ for depth in lookahead_depths:
     # dyna_with_lookahead(alpha, gamma, epsilon, episodes, max_steps, depth, render=False, start=start,
     #                     goal=goal, letter=letter, transition_times=transition_times)
     dyna_lookahead_heuristic(alpha, gamma, epsilon, episodes, max_steps, depth, render=False, start=start,
-                             goal=goal, letter=letter, transition_times=transition_times, version='v0')
+                             goal=goal, letter=letter, transition_times=transition_times, version='v0',
+                             epsilon_decay=epsilon_decay)
     run_time = time.time() - start_time_per_depth
     time_per_depth.append(run_time)
 print("--- TOTAL TIME:  %s seconds ---" % (time.time() - start_time))
