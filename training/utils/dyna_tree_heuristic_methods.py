@@ -1,5 +1,5 @@
 import random
-from typing import List, Dict
+from typing import List, Dict, Set
 
 import pandas as pd
 
@@ -39,11 +39,11 @@ def do_heuristic_model_learning(model: Dict,
                                              start=start,
                                              goal=goal,
                                              moves_made=moves_made)
-        
+    
     if a is None:
         previous_s_a = model.keys()
         s, a = random.choice(previous_s_a)
-
+    
     result = model.get((s, a))  # obtain r and s' from the model
     
     # If action is not in the model, imagine it and update model
@@ -51,7 +51,7 @@ def do_heuristic_model_learning(model: Dict,
         r = calculate_step_reward(action=a,
                                   goal_state=goal,
                                   start_position=start,
-                                  moves_made=moves_made,
+                                  moves_made=moves_made + 1,
                                   state=s)
         n_s = a
         update_model(model=model,
@@ -79,6 +79,9 @@ def get_planned_rewards_using_lookahead(depth, state, start, goal,
     :param moves_made:
     :return: List of next action values
     """
+    added = set()
+    added.add(state)
+    
     actions = get_possible_actions(state)
     action_values = []
     
@@ -93,7 +96,8 @@ def get_planned_rewards_using_lookahead(depth, state, start, goal,
                                            state=a,
                                            start=start,
                                            goal=goal,
-                                           moves_made=moves_made + 1)
+                                           moves_made=moves_made + 1,
+                                           added=added)
             )
     return action_values
 
@@ -102,7 +106,8 @@ def look_ahead_for_max_rewards(depth: int,
                                state: int,
                                start: int,
                                goal: int,
-                               moves_made: int) -> float:
+                               moves_made: int,
+                               added: Set) -> float:
     """
     Each call to this function simulates imagined move made and observing
     the reward that was returned by that action.
@@ -113,10 +118,17 @@ def look_ahead_for_max_rewards(depth: int,
     :param moves_made:
     :return:
     """
+    
+    added.add(state)
+    
     actions = get_possible_actions(state)
     action_values = []
     
     for a in actions:
+        
+        if a in added:
+            continue
+        
         if depth == 0:
             reward = calculate_step_reward(action=a,
                                            goal_state=goal,
@@ -130,7 +142,8 @@ def look_ahead_for_max_rewards(depth: int,
                                            state=a,
                                            start=start,
                                            goal=goal,
-                                           moves_made=moves_made + 1)
+                                           moves_made=moves_made + 1,
+                                           added=added)
             )
     return max(action_values)
 

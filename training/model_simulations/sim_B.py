@@ -11,7 +11,7 @@ start = 51
 goal = 32
 letter = 'B'
 
-episodes = 700
+episodes = 100
 
 participants = 2
 

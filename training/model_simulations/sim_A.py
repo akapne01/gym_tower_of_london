@@ -11,8 +11,9 @@ start = 33
 goal = 54
 letter = 'A'
 
-episodes = 1
-participants = 1
+episodes = 1000
+
+participants = 2
 
 time_per_depth = []
 start_time = time.time()
