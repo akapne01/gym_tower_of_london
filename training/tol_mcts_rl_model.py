@@ -142,22 +142,24 @@ class SarsaUCTIteration:
         """
         goal_state = self.env.goal_state
         moves_made = self.env.counter
-        reward = self.get_reward(action, moves_made=moves_made)
+        reward = self.get_reward(action, moves_made=moves_made, state=state)
         is_done = action == goal_state
         action_meaning = self.env.get_action_meaning(state, action)
         info = {
             'state': state,
             'action': action_meaning
         }
-        print(f'Returning action={action}, reward={reward}, is_done={is_done}, info={info} ')
+        print(
+            f'Returning action={action}, reward={reward}, is_done={is_done}, info={info} ')
         print()
 
         return action, reward, is_done, info
 
-    def get_reward(self, action: int, moves_made: int) -> float:
-        return calculate_step_reward(action=action, goal_state=self.env.goal_state,
+    def get_reward(self, action: int, moves_made: int, state: int) -> float:
+        return calculate_step_reward(action=action,
+                                     goal_state=self.env.goal_state,
                                      start_position=self.env.initial_state,
-                                     moves_made=moves_made)
+                                     moves_made=moves_made, state=state)
 
 
 def save_tree(tree: Node) -> None:
@@ -169,7 +171,9 @@ def save_tree(tree: Node) -> None:
     """
     DotExporter(tree,
                 nodenamefunc=lambda node: node.name,
-                edgeattrfunc=lambda parent, child: "style=bold,label=%10.2f" % (child.reward or 0)
+                edgeattrfunc=lambda parent,
+                                    child: "style=bold,label=%10.2f" % (
+                            child.reward or 0)
                 ).to_dotfile(f"images/dot/reward_tree_{s}.dot")
     (graph,) = pydot.graph_from_dot_file(f"images/dot/reward_tree_{s}.dot")
     graph.write_png(f"images/png/reward_tree_{s}.png")

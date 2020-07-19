@@ -10,7 +10,7 @@ import numpy as np
 from networkx.tests.test_convert_pandas import pd
 
 from training.run_simulations.parameters import LAST_MOVES_COUNT
-from training.utils.planning_helper import init_q_table, get_best_Q
+from training.utils.planning_helper import init_q_table, get_best_Q_value
 from training.utils.tree_methods import search_tree, plan_for_best_actions
 
 
@@ -126,6 +126,8 @@ def save_stats_csv(Q, letter, episodes, alpha, gamma, epsilon, depth, episode_mo
     df['ACTIONS_NUMBERS'] = actions_taken
     df['PATHS'] = move_path_monitor
     df['EPSILON'] = epsilon_monitor
+    df['ALPHA'] = alpha
+    df['GAMMA'] = gamma
     df.to_csv(stats_path, index=False)
 
     stats = pd.DataFrame(df.MOVE_COUNT.describe())

@@ -164,7 +164,6 @@ def add_one_level_step_reward(nodes, g, start_position, goal, moves_so_far,
         """
         Loop through children and copy the q_values, visits and 
         """
-        n_goal = no_in_positions(nodes, goal)
         for a in children:
             if a in states_in_tree:
                 continue
@@ -173,8 +172,7 @@ def add_one_level_step_reward(nodes, g, start_position, goal, moves_so_far,
                                                     goal_state=goal,
                                                     start_position=start_position,
                                                     moves_made=moves_so_far,
-                                                    n_goal_pos=n_goal))
-        # states_in_tree.update(children)
+                                                    state=nodes))
 
 
 def search_tree(state, depth, start_state, goal_state, moves_made):
@@ -205,9 +203,8 @@ def search_tree(state, depth, start_state, goal_state, moves_made):
     Add 1 level lookahead
     """
     states = state
-    n_goal = no_in_positions(state, goal_state)
     add_one_level_step_reward(states, g, start_state, goal_state, moves_made,
-                              states_in_tree, n_goal)
+                              states_in_tree, state)
     moves_made += 1
     """
     Add higher level lookahead
@@ -217,9 +214,8 @@ def search_tree(state, depth, start_state, goal_state, moves_made):
     for i in range(depth - 1):
         next_states = []
         for s in states:  # add one level for each of the child nodes
-            n_goal = no_in_positions(s, goal_state)
             add_one_level_step_reward(s, g, start_state, goal_state,
-                                      moves_made, states_in_tree, n_goal)
+                                      moves_made, states_in_tree, s)
             next_states.extend(get_possible_actions(s))
         moves_made += 1
         states = next_states
@@ -484,7 +480,7 @@ def calculate_end_reward(action: int, goal: int, min_moves: int,
 
 def calculate_step_reward(action: int, goal_state: int,
                           start_position: int, moves_made: int,
-                          n_goal_pos: int) -> float:
+                          state: int) -> float:
     """
     Only one action from all the possible actions that can be taken
     has a positive reward. All other actions have a negative reward.
@@ -506,7 +502,8 @@ def calculate_step_reward(action: int, goal_state: int,
     :return: +100 if action is rewarded, -100 is not
     """
     # Calculate Reward
-    before = n_goal_pos
+    before = no_in_positions(state, goal_state)
+    # before = n_goal_pos
     balls_in_goal_place = no_in_positions(action, goal_state)
     min_moves = get_min_no_moves(start_position, goal_state)
 
@@ -626,20 +623,23 @@ def look_ahead_plan_future_returns(depth, state, start, goal, moves_made):
     :param moves_made:
     :return:
     """
-    print(f'# look_ahead_plan_future_returns : depth={depth}, state = {state}')
+    print(f'# 3. look_ahead_plan_future_returns : depth={depth}, state ='
+          f' {state}, moves_made={moves_made}')
     actions = get_possible_actions(state)
     action_values = []
     for a in actions:
         if depth == 0:
-            n_goal = no_in_positions(state, goal)
-            action_values.append(
-                calculate_step_reward(a, goal, start, moves_made, n_goal))
+            reward = calculate_step_reward(a, goal, start, moves_made, state)
+            print(f'3. look_ahead_plan_future_returns: a={a}, rew={reward}')
+            action_values.append(reward)
         else:
+            print(f'3. calling 3. with d={depth - 1}, moves_made='
+                  f'{moves_made + 1}')
             action_values.append(
                 look_ahead_plan_future_returns(depth - 1, a, start, goal,
                                                moves_made + 1))
     max_value = max(action_values)
-    print(f'# estimate_v_planning: returning max_value={max_value}')
+    print(f'# 3. estimate_v_planning: returning max_value={max_value}')
     return max(action_values)
 
 
@@ -654,7 +654,8 @@ def estimate_q_planning(depth, model, state, Q) -> List:
     return q_values
 
 
-def estimate_action_rewards_using_planning(depth, state, start, goal, moves_made) -> List:
+def estimate_action_rewards_using_planning(depth, state, start, goal,
+                                           moves_made) -> List:
     # Plan rewards
     """
     For all the actions that  are possible to be taken from the
@@ -667,21 +668,25 @@ def estimate_action_rewards_using_planning(depth, state, start, goal, moves_made
     :param moves_made:
     :return: List of next action values
     """
-    print(f'# estimate_action_rewards_using_planning: state={state}, depth={depth}')
+    print(f'# 2. estimate_action_rewards_using_planning: state={state}, '
+          f'depth={depth}, moves_made={moves_made}')
     actions = get_possible_actions(state)
     action_values = []
 
     for a in actions:
         # test this
         if depth == 0:
-            n_goal = no_in_positions(state, goal)
-            action_values.append(
-                calculate_step_reward(a, goal, start, moves_made, n_goal))
+            reward = calculate_step_reward(a, goal, start, moves_made, state)
+            print(f' 2. estimate_action_rewards_using_planning: a={a}, '
+                  f'reward={reward} appended to action_values')
+            action_values.append(reward)
         else:
+            print(f'2. Calling 3. with d={depth - 1} and moves_made='
+                  f'{moves_made + 1}')
             action_values.append(
                 look_ahead_plan_future_returns(depth - 1, a, start, goal,
-                                               moves_made))
-    print(f'# estimate_q_planning:returning action_values = {action_values}')
+                                               moves_made + 1))
+    print(f'# 2.estimate_q_planning:returning action_values= {action_values}')
     return action_values
 
 
@@ -714,24 +719,36 @@ def planning_algorithm_new(state, depth, start, goal, moves_made):
     depth
     """
     # Selects the best action
-    print(f'# planning_algorithm: state={state}, depth={depth}')
+    print(f'# 1. planning_algorithm: state={state}, depth={depth}, '
+          f'moves_made={moves_made}')
 
     actions = get_possible_actions(state)
-    action_values = estimate_action_rewards_using_planning(depth, state, start, goal, moves_made)
+    action_values = estimate_action_rewards_using_planning(depth, state, start,
+                                                           goal, moves_made)
     max_value = max(action_values)
+    print(f'# 1. action_values = {action_values}')
+    value_check = []
     for a, v in zip(actions, action_values):
-        if v == max_value:
-            print(f'# planning_algorithm: returning action a = {a}')
-            return a
-    print(f'# planning_algorithm: returning action a = NONE')
-    return None
+        if v == max_value:  # Can be more than 1 value returned.
+            print(f'# 1. appending action a = {a} to value_check')
+            value_check.append(a)
+    if len(value_check) == 0:
+        print(f'# 1. planning_algorithm: returning action a = NONE')
+        return None
+    if len(value_check) == 1:
+        print(f'# 1. action_values = {value_check[0]}')
+        return value_check[0]
+    a = random.choice(value_check)
+    print(f'1. More than 1 action, returning action {a} from {action_values}')
+    return a
 
 
 def planning_algorithm_2(state, depth, start, goal, moves_made):
     # Looks for rewards
     print(f'# planning_algorithm: state={state}, depth={depth}')
     actions = get_possible_actions(state)
-    q_values = estimate_action_rewards_using_planning(depth, state, start, goal, moves_made)
+    q_values = estimate_action_rewards_using_planning(depth, state, start,
+                                                      goal, moves_made)
     max_value = max(q_values)
     for a, v in zip(actions, q_values):
         if v == max_value:

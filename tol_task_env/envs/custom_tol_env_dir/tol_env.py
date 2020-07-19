@@ -61,7 +61,7 @@ class ToLTaskEnv(gym.Env):
         self.__version__ = "0.0.1"
         self.observation_space = gym.spaces.MultiDiscrete([(1, 6), (1, 6)])
         self.viewer = None
-        self.delay = 1
+        self.delay = 0
         self.goal_positions = state_ball_mapper.get(int_to_state.get(self.goal_state))
         self.min_moves = MIN_MOVES.get((self.initial_state, self.goal_state))
         self.goal_red = self.goal_positions.red

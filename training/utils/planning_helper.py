@@ -7,17 +7,17 @@ from networkx.tests.test_convert_pandas import pd
 from envs.custom_tol_env_dir import ToLTaskEnv
 from envs.custom_tol_env_dir.tol_2d.mapping import int_to_state, state_to_int
 from envs.custom_tol_env_dir.tol_2d.state import TolState
+
 # from training.utils.tree_methods import plan_for_best_actions
 
 FILL_VALUE = -100
 
 
-
-
 def init_q_table():
     poss_states = 36
     poss_actions = 36
-    q_table = pd.DataFrame(np.array([[FILL_VALUE] * poss_actions] * poss_states))
+    q_table = pd.DataFrame(
+        np.array([[FILL_VALUE] * poss_actions] * poss_states))
     int_states = int_to_state.keys()  # contains all possible states
     q_table.index = int_states
     q_table.columns = int_states
@@ -28,21 +28,29 @@ def init_q_table():
     return q_table
 
 
-def get_best_Q(state, Q) -> List:
+def get_best_Q_value(state, Q) -> float:
+    """
+    Gets the next actions and find the
+    max of the action Q values for specified
+    state. Returns max Q-value
+    :param state:
+    :param Q:
+    :return:
+    """
     max_q = 0
     max_a = 0
     best = []
     # all possible actions
     actions = get_possible_actions(state)
     df = Q.loc[actions]
-    max_s = df[state].max()
-    print(f'# get_best_Q :  state={state} ; max={max_s}')
-    for a in actions:
-        value = Q.loc[a, state]
-        if value == max_s:
-            best.append(a)
-    print(f'# get_best_Q: the best action returned is {best}')
-    return best
+    max_s = df[state].max()  # should return  max_s?
+    # print(f'# get_best_Q :  state={state} ; max={max_s}')
+    # for a in actions:
+    #     value = Q.loc[a, state]
+    #     if value == max_s:
+    #         best.append(a)
+    print(f'# get_best_Q: the best Q-value for s={state} is next_q={max_s}')
+    return max_s
 
 
 def get_possible_actions(state):
@@ -71,7 +79,8 @@ def get_possible_actions(state):
             (color_permutation_no * 10 + 5),
             state_to_int.get(TolState(
 
-                (ToLTaskEnv.clamp(color_permutation_no + 1), ToLTaskEnv.clamp(color_permutation_no - 1),
+                (ToLTaskEnv.clamp(color_permutation_no + 1),
+                 ToLTaskEnv.clamp(color_permutation_no - 1),
                  )[color_permutation_no % 2 == 1], 6
             ))
             ],
@@ -114,7 +123,8 @@ def _find_closest_goal_arrangement_action(goal_state, possible_actions) -> int:
         result = candidates[0]
     else:
         candidates = [a % 10 for a in candidates]
-        closest_arrangement = min(candidates, key=lambda x: abs(x - goal_state % 10))
+        closest_arrangement = min(candidates,
+                                  key=lambda x: abs(x - goal_state % 10))
 
         for action in candidates:
             if action % 10 == closest_arrangement:
@@ -131,7 +141,8 @@ def _find_closest_goal_colour_action(goal_state, possible_actions) -> int:
     :return: Action from the action space
     """
     action_space_colours = [a // 10 for a in possible_actions]
-    closest_colour = min(action_space_colours, key=lambda x: abs(x - goal_state // 10))
+    closest_colour = min(action_space_colours,
+                         key=lambda x: abs(x - goal_state // 10))
     for action in possible_actions:
         if action // 10 == closest_colour:
             return action
@@ -152,10 +163,12 @@ def _get_rewarded_action(goal_state, possible_actions) -> int:
         return goal_state
 
     goal_colour_no = goal_state // 10
-    has_actions_with_goal_colour_no = goal_colour_no in [a // 10 for a in possible_actions]
+    has_actions_with_goal_colour_no = goal_colour_no in [a // 10 for a in
+                                                         possible_actions]
 
     if has_actions_with_goal_colour_no:
-        return _find_closest_goal_arrangement_action(goal_state, possible_actions)
+        return _find_closest_goal_arrangement_action(goal_state,
+                                                     possible_actions)
     return _find_closest_goal_colour_action(goal_state, possible_actions)
 
 

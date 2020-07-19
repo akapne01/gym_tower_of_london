@@ -9,9 +9,10 @@ from training.dyna_planning import save_stats_csv, reset_episode, initialise, \
 import numpy as np
 
 from training.utils.planning_helper import get_possible_actions, init_q_table, \
-    get_best_Q
+    get_best_Q_value
 from training.utils.tree_methods import search_tree, search_tree_end_rewards, \
-    planning_algorithm, planning_algorithm_2, planning_algorithm_new
+    planning_algorithm, planning_algorithm_2, planning_algorithm_new, \
+    no_in_positions, calculate_step_reward
 
 
 def model_learning_with_heuristic_new(model, Q, env, gamma, alpha, depth,
@@ -26,13 +27,14 @@ def model_learning_with_heuristic_new(model, Q, env, gamma, alpha, depth,
     :param env: environment
     """
     s = env.state
-    # Wors action selected
+
     a = planning_algorithm_new(s, depth, start, goal, moves_made)
-    print(f'Planning algorithm returns a={a}')
+    print(f'0. Planning algorithm returns a={a}')
     # If worst action not found then action is selected randomly from state
     # and actions taken previously
     if a is None:
-        print(f'# model_learning_with_heuristic: returned action=None. SELECTING RANDOMLY from  next actions')
+        print(f'# 0. model_learning_with_heuristic: returned action=None. '
+              f'SELECTING RANDOMLY from  next actions')
         previous_s_a = model.keys()
         s, a = random.choice(previous_s_a)
 
@@ -41,16 +43,19 @@ def model_learning_with_heuristic_new(model, Q, env, gamma, alpha, depth,
 
     # If action is not in the model
     if result is None:
-        print(
-            f'# model_learning_with_heuristic: Action was not in the model, select randomly keys from model')
-        (s, a), (r, n_s) = random.choice(list(model.items()))
+        # Action is not in the model. We can add when we calculate the
+        # reward s, a
+
+        r = calculate_step_reward(a, goal, start, moves_made, s)
+        model = update_model(model, s, a, r, a)
+        n_s = a
+        print(f' # model plan: result was None, added to the model={result}')
     else:
         print(
             f'# model_learning_with_heuristic: Result={result} PROCEEDING WITH HEURISTIC VALUES')
         r, n_s = result
     print(f'# model_learning_with_heuristic: (s, a), (r, n_s)')
     print(f'# model_learning_with_heuristic: ({s}, {a}), ({r}, {n_s})')
-    # q_learning_update2(Q, s, a, r, n_s, env, tree, gamma, alpha)
     q_learning_update2(Q, s, a, r, n_s, env, gamma, alpha)
 
 
@@ -98,19 +103,12 @@ def q_learning_update2(Q, s, a, r, s_prime, env, gamma, alpha):
     TD Update
     """
     print(f'# q_learning_update2 state={s} and next state is {s_prime}')
-    best_next_actions = get_best_Q(s_prime, Q)
-    print(f'# q_learning_update2: Best NEXT actions: {best_next_actions}')
-    for action in best_next_actions:
-        print(f' # (FOR) q_learning_update2: action={action}')
-        # best_next_action = greedy_planning_look_ahead(Q, env, s_prime, tree)
-        print(
-            f' # (FOR) q_learning_update2: Q.loc[action, s_prime]={Q.loc[action, s_prime]}')
-        print(f' # (FOR) q_learning_update2: Q.loc[a, s]={Q.loc[a, s]}')
-        td_target = r + gamma * Q.loc[action, s_prime]
-        td_delta = td_target - Q.loc[a, s]
-        print(
-            f' # (FOR) q_learning_update2: td_target={td_target}, td_delta={td_delta}, Q.loc[a, s] value now is = {Q.loc[a, s] + alpha * td_delta}')
-        Q.loc[a, s] = Q.loc[a, s] + alpha * td_delta
+    max_next_q = get_best_Q_value(s_prime, Q)  # next Q.loc[action, s_prime]
+    td_target = r + gamma * max_next_q
+    td_delta = td_target - Q.loc[a, s]
+    print(f'# q_update2 : td_delta = {td_delta}')
+    print(f' # q_update2 New q-value = {Q.loc[a, s] + alpha * td_delta}')
+    Q.loc[a, s] = Q.loc[a, s] + alpha * td_delta
 
 
 #
@@ -152,7 +150,7 @@ def take_action_using_epsilon_greedy(state, q, epsilon):
         return a
     print(
         f'# take_action_using_epsilon_greedy - Getting action to return by policy')
-    a = get_best_Q(state, q)
+    a = get_best_Q_value(state, q)
     print(
         f'# take_action_using_epsilon_greedy - Max Q selected returning: {a}')
     if len(a) == 1:
@@ -293,7 +291,7 @@ def dyna_lookahead_heuristic_new(alpha: float, gamma: float, epsilon: float,
                                  transition_times=1,
                                  letter='NA', version='v0',
                                  epsilon_decay=0.999, pid=999,
-                                 min_epsilon = 0.3):
+                                 min_epsilon=0.3):
     """
     Dyna Algorithm with possibility to look-ahead to simulate planning
     :param version: v0 - give rewards on every step, v1 - returns reward after episode is complete
@@ -345,12 +343,12 @@ def dyna_lookahead_heuristic_new(alpha: float, gamma: float, epsilon: float,
                                                   start, goal, env.counter)
                 print(f'~~~ selecting a_prime ~~~')
 
-                s = s_prime
+            s = s_prime
 
-                # Epsilon is in the range (min_epsilon, epsilon]
-                # After reaching minimum is not reduced further
-                if epsilon > min_epsilon:
-                    epsilon = epsilon * epsilon_decay
+            # Epsilon is in the range (min_epsilon, epsilon]
+            # After reaching minimum is not reduced further
+            if epsilon > min_epsilon:
+                epsilon = epsilon * epsilon_decay
 
             # Add time step statistics
             total_return += reward
