@@ -5,7 +5,8 @@ import pandas as pd
 
 from training.utils.dyna_helper_methods import q_value_update, update_model
 from training.utils.planning_helper import get_possible_actions
-from training.utils.tree_methods import calculate_step_reward
+from training.utils.tree_methods import calculate_step_reward, \
+    look_for_rewards_in_tree
 
 
 def do_heuristic_model_learning(model: Dict,
@@ -168,12 +169,17 @@ def get_action_using_lookahead_heuristic(state: int,
     """
     
     actions = get_possible_actions(state)
-    action_values = get_planned_rewards_using_lookahead(depth=depth,
-                                                        state=state,
-                                                        start=start,
-                                                        goal=goal,
-                                                        moves_made=moves_made)
+    # action_values = get_planned_rewards_using_lookahead(depth=depth,
+    #                                                     state=state,
+    #                                                     start=start,
+    #                                                     goal=goal,
+    #                                                     moves_made=moves_made)
     
+    action_values = look_for_rewards_in_tree(state=state,
+                                             depth=depth,
+                                             start=start,
+                                             goal=goal,
+                                             moves_made=moves_made)
     max_value = max(action_values)
     value_check = []
     
@@ -185,3 +191,14 @@ def get_action_using_lookahead_heuristic(state: int,
         return None
     # If only 1 action, it is chosen
     return random.choice(value_check)
+
+
+if __name__ == '__main__':
+    """
+    get_action_using_lookahead_heuristic(state: int,
+                                         depth: int,
+                                         start: int,
+                                         goal: int,
+                                         moves_made: int)
+    """
+    a = get_action_using_lookahead_heuristic(33, )

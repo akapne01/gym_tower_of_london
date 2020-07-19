@@ -33,8 +33,6 @@ def dyna_heuristic_with_lookahead(alpha: float,
     :param gamma: discount-rate parameter
     :param epsilon: probability of taking a random action
     :param episodes: NUmber of trials
-    :param max_steps: Represents after how many steps should terminate the
-    algorithm and disregard the trial
     :param depth: Number of moves to lookahead for rewards
     :param render: Boolean representing if GUI should be rendered
     :param start: ToL start state
