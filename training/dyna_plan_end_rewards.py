@@ -96,7 +96,8 @@ def dyna_heuristic_with_lookahead(alpha: float,
                                             depth=depth,
                                             start=start,
                                             goal=goal,
-                                            moves_made=env.counter)
+                                            moves_made=env.counter,
+                                            epsilon=epsilon)
             
             s = s_prime
             

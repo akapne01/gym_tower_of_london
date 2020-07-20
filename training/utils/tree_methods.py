@@ -3,6 +3,7 @@ from typing import List
 
 import matplotlib.pyplot as plt
 import networkx as nx
+import pandas as pd
 import pydot
 from anytree import Node
 from anytree.exporter import DotExporter
@@ -94,6 +95,42 @@ def find_max(tree, state):
     return max
 
 
+def get_q_value(state, action, q_values):
+    return q_values.loc[action, state]
+
+
+def add_one_level_q_values(nodes, tree, start, goal, q_values,
+                           states_in_tree) -> None:
+    """
+    Adds level with rewards on every step
+    :param nodes: can be an int or a list
+    :param tree: graph
+    :param start_position: start position of the problem
+    :param goal: goal state for the problem
+    :param moves_so_far: how many moves are simulated
+    :param states_in_tree: which states have already been added to the tree
+    """
+    
+    # nodes can be a state or a list of nodes
+    if isinstance(nodes, list):
+        for n in nodes:
+            add_one_level_step_reward(n, tree, start, goal, q_values,
+                                      states_in_tree)
+    else:
+        children = get_possible_actions(nodes)
+        # g.add_nodes_from(children)
+        
+        """
+        Loop through children and copy the q_values, visits and
+        """
+        for a in children:
+            if a in states_in_tree:
+                continue
+            tree.add_edge(nodes, a,
+                          weight=get_q_value(state=nodes, action=a, q_values=q))
+            states_in_tree.add(a)
+
+
 def add_one_level_step_reward(nodes, g, start_position, goal, moves_so_far,
                               states_in_tree) -> None:
     """
@@ -128,6 +165,54 @@ def add_one_level_step_reward(nodes, g, start_position, goal, moves_so_far,
                                                     moves_made=moves_so_far,
                                                     state=nodes))
             states_in_tree.add(a)
+
+
+def build_q_value_tree(state, depth, start_state, goal_state, q_values):
+    """
+    Searach tree that uses rewards applied at every step
+
+    :param state:
+    :param depth:
+    :param start_state:
+    :param goal_state:
+    :param moves_made:
+    :param n_goal: number of balls in the goal position
+    :return:
+    """
+    tree = nx.DiGraph()
+    
+    # States that are added to the tree are saved in this set
+    states_in_tree = set()
+    states_in_tree.add(state)
+    """
+    Add current node
+    """
+    tree.add_node(state)
+    
+    """
+    Add 1 level lookahead
+    """
+    states = state
+    add_one_level_q_values(states, tree, start_state, goal_state, q_values,
+                           states_in_tree)
+    
+    # add_one_level_step_reward(states, tree, start_state, goal_state, moves_made,
+    #                           states_in_tree)
+    
+    """
+    Add higher level lookahead
+    """
+    states = get_possible_actions(state)
+    
+    for i in range(depth - 1):
+        next_states = []
+        for s in states:  # add one level for each of the child nodes
+            add_one_level_q_values(states, tree, start_state, goal_state,
+                                   q_values,
+                                   states_in_tree)
+            next_states.extend(get_possible_actions(s))
+        states = next_states
+    return tree
 
 
 def build_search_tree(state, depth, start_state, goal_state, moves_made):
@@ -360,8 +445,28 @@ def look_for_rewards_in_tree(state: int,
     action_values = []
     actions = get_possible_actions(state)
     tree = build_search_tree(state=state, depth=depth, start_state=start,
-                             goal_state=62,
-                             moves_made=0)
+                             goal_state=goal,
+                             moves_made=moves_made)
+    for a in actions:
+        r = calculate_step_reward(action=a,
+                                  goal_state=goal,
+                                  start_position=start,
+                                  moves_made=moves_made + 1,
+                                  state=state)
+        max_value = max(r, find_max(tree, a))
+        action_values.append(max_value)
+        print(f'# a = {a} & max = {max_value}')
+    return action_values
+
+
+def look_for_q_values_in_tree(state: int,
+                              depth: int,
+                              start: int,
+                              goal: int,
+                              q_values: pd.DataFrame) -> List:
+    action_values = []
+    actions = get_possible_actions(state)
+    tree = build_q_value_tree(state, depth, start_state, goal_state, q_values)
     for a in actions:
         r = calculate_step_reward(action=a,
                                   goal_state=goal,
