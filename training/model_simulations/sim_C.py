@@ -25,7 +25,7 @@ for pid in range(participants):
     # alpha = random.uniform(0, 1)
     # gamma = random.uniform(0, 1)
     
-    for i in range(1, 5):
+    for i in range(0, 5):
         depth = i
         start_time_per_depth = time.time()
         dyna_heuristic_with_lookahead(alpha=alpha,

@@ -45,14 +45,15 @@ def do_heuristic_model_learning(model: Dict,
                                                  depth=depth,
                                                  start=start,
                                                  goal=goal,
+                                                 moves_made=moves_made,
                                                  q_values=Q)
-    
+
     if a is None:
         previous_s_a = model.keys()
         s, a = random.choice(previous_s_a)
-    
+
     result = model.get((s, a))  # obtain r and s' from the model
-    
+
     # If action is not in the model, imagine it and update model
     if result is None:
         r = calculate_step_reward(action=a,
@@ -66,10 +67,10 @@ def do_heuristic_model_learning(model: Dict,
                      action=a,
                      reward=r,
                      next_state=n_s)
-    
+
     else:
         r, n_s = result
-    
+
     q_value_update(Q=Q, s=s, a=a, r=r, s_prime=n_s, gamma=gamma, alpha=alpha)
 
 
@@ -88,12 +89,12 @@ def get_planned_rewards_using_lookahead(depth, state, start, goal,
     """
     added = set()
     added.add(state)
-    
+
     actions = get_possible_actions(state)
     action_values = []
-    
+
     for a in actions:
-        
+
         if depth == 0:
             reward = calculate_step_reward(a, goal, start, moves_made, state)
             action_values.append(reward)
@@ -125,17 +126,17 @@ def look_ahead_for_max_rewards(depth: int,
     :param moves_made:
     :return:
     """
-    
+
     added.add(state)
-    
+
     actions = get_possible_actions(state)
     action_values = []
-    
+
     for a in actions:
-        
+
         if a in added:
             continue
-        
+
         if depth == 0:
             reward = calculate_step_reward(action=a,
                                            goal_state=goal,
@@ -159,6 +160,7 @@ def get_action_using_lookahead_heuristic(state: int,
                                          depth: int,
                                          start: int,
                                          goal: int,
+                                         moves_made: int,
                                          q_values: pd.DataFrame) -> int:
     """
     Finds the best action that can be taken in the state. This action is
@@ -173,32 +175,33 @@ def get_action_using_lookahead_heuristic(state: int,
     :return: Returns the best of immediate actions with look-ahead
     depth
     """
-    
+
     actions = get_possible_actions(state)
     # action_values = get_planned_rewards_using_lookahead(depth=depth,
     #                                                     state=state,
     #                                                     start=start,
     #                                                     goal=goal,
     #                                                     moves_made=moves_made)
-    
+
     # action_values = look_for_rewards_in_tree(state=state,
     #                                          depth=depth,
     #                                          start=start,
     #                                          goal=goal,
     #                                          moves_made=moves_made)
-    
+
     action_values = look_for_q_values_in_tree(state=state,
                                               depth=depth,
                                               start=start,
                                               goal=goal,
+                                              moves_made=moves_made,
                                               q_values=q_values)
     max_value = max(action_values)
     value_check = []
-    
+
     for a, v in zip(actions, action_values):
         if v == max_value:
             value_check.append(a)
-    
+
     if len(value_check) == 0:
         return None
     # If only 1 action, it is chosen

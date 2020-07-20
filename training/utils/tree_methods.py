@@ -127,7 +127,7 @@ def add_one_level_q_values(nodes, tree, start, goal, q_values,
             if a in states_in_tree:
                 continue
             tree.add_edge(nodes, a,
-                          weight=get_q_value(state=nodes, action=a, q_values=q))
+                          weight=get_q_value(state=nodes, action=a, q_values=q_values))
             states_in_tree.add(a)
 
 
@@ -463,10 +463,11 @@ def look_for_q_values_in_tree(state: int,
                               depth: int,
                               start: int,
                               goal: int,
+                              moves_made,
                               q_values: pd.DataFrame) -> List:
     action_values = []
     actions = get_possible_actions(state)
-    tree = build_q_value_tree(state, depth, start_state, goal_state, q_values)
+    tree = build_q_value_tree(state, depth, start, goal, q_values)
     for a in actions:
         r = calculate_step_reward(action=a,
                                   goal_state=goal,
