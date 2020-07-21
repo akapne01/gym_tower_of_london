@@ -63,17 +63,19 @@ def calculate_step_reward(action: int,
     balls_in_goal_place = no_in_positions(action, goal_state)
     min_moves = get_min_no_moves(start_position, goal_state)
     
+    if moves_made > 100:
+        return -100
     if action == goal_state:
         if moves_made == min_moves:
-            return 100 / moves_made
-        return 1 / moves_made
+            return 100
+        return 1
     
     if balls_in_goal_place > before:
-        return 0.25 / moves_made
+        return 0.25
     elif balls_in_goal_place == before:
         return 0
     else:
-        return (-1) * 0.25 / moves_made
+        return (-1) * 0.25
 
 
 def find_max(tree, state):
@@ -87,6 +89,7 @@ def find_max(tree, state):
     max = 0
     for a, b in nx.dfs_edges(tree, state):
         value = tree[a][b]['weight']
+        print(f'value > max : {value} > {max}')
         if value > max:
             max = value
     print(
@@ -114,8 +117,8 @@ def add_one_level_q_values(nodes, tree, start, goal, q_values,
     # nodes can be a state or a list of nodes
     if isinstance(nodes, list):
         for n in nodes:
-            add_one_level_step_reward(n, tree, start, goal, q_values,
-                                      states_in_tree)
+            add_one_level_q_values(n, tree, start, goal, q_values,
+                                   states_in_tree)
     else:
         children = get_possible_actions(nodes)
         # g.add_nodes_from(children)
@@ -127,7 +130,8 @@ def add_one_level_q_values(nodes, tree, start, goal, q_values,
             if a in states_in_tree:
                 continue
             tree.add_edge(nodes, a,
-                          weight=get_q_value(state=nodes, action=a, q_values=q_values))
+                          weight=get_q_value(state=nodes, action=a,
+                                             q_values=q_values))
             states_in_tree.add(a)
 
 
@@ -559,7 +563,7 @@ if __name__ == '__main__':
     nx.draw(tree, pos=pos, with_labels=True, node_size=600,
             node_color='lightgreen')
     #
-    labels = nx.get_edge_attributes(tree, 'weight')
+    labels = format(nx.get_edge_attributes(tree, 'weight'), '.2f')
     #
     nx.draw_networkx_edge_labels(tree, pos, edge_labels=labels,
                                  font_color='black')
