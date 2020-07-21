@@ -64,7 +64,7 @@ def calculate_step_reward(action: int,
     min_moves = get_min_no_moves(start_position, goal_state)
     
     if moves_made > 100:
-        return -100
+        return -1
     if action == goal_state:
         if moves_made == min_moves:
             return 100

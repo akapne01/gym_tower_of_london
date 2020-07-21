@@ -303,7 +303,7 @@ class ToLTaskEnv(gym.Env):
         print('Balls in goal', balls_in_goal_place)
         moves_made = self.counter
         if moves_made > 100:
-            return -100
+            return -1
         if action == self.goal_state:
             if self.counter == self.min_moves:
                 return 100
