@@ -101,10 +101,9 @@ def save_stats_csv(Q: pd.DataFrame,
     Saves CSV files:
     Q_values and training moves and statistics. Parameters are saved in the CSV name
     """
-    params = f'ep={episodes}_al={alpha}_gam={gamma}_eps={epsilon}_pid' \
-             f'={pid}_depth={depth}_mtrans={transition_times}'
-    q_value_path = f'{letter}/{letter}_{version}_DYNA_QVALUES_{params}.csv'
-    stats_path = f'{letter}/{letter}_{version}_DYNA_{params}.csv'
+    params = f'ep={episodes}_pid={pid}_al={alpha}_gam={gamma}__depth={depth}_eps={epsilon}_mtrans={transition_times}'
+    q_value_path = f'{letter}/{letter}_{version}_dyna-h_qvalues_{params}.csv'
+    stats_path = f'{letter}/{letter}_{version}_dyna-h_stats_{params}.csv'
     
     Q.to_csv(q_value_path)
     

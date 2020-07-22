@@ -11,7 +11,7 @@ start = 33
 goal = 54
 letter = 'A'
 
-episodes = 1000
+episodes = 600
 
 participants = 2
 

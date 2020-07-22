@@ -63,7 +63,7 @@ def calculate_step_reward(action: int,
     balls_in_goal_place = no_in_positions(action, goal_state)
     min_moves = get_min_no_moves(start_position, goal_state)
     
-    if moves_made > 100:
+    if moves_made > 55:
         return -1
     if action == goal_state:
         if moves_made == min_moves:

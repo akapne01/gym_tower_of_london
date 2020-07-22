@@ -13,7 +13,7 @@ goal = 66
 
 letter = 'C'
 
-episodes = 1000
+episodes = 600
 
 participants = 2
 

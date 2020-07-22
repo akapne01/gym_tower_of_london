@@ -46,8 +46,8 @@ def dyna_heuristic_with_lookahead(alpha: float,
     env = gym.make(f'TolTask-{env_version}', start_state=start, goal_state=goal)
     env.delay = 0
     Q, window, episode_reward, episode_moves, \
-        moves_counter, model, move_path_monitor, \
-        actions_taken, epsilon_monitor = initialise_algorithm()
+    moves_counter, model, move_path_monitor, \
+    actions_taken, epsilon_monitor = initialise_algorithm()
     """
     Loop through the episodes
     """
@@ -101,9 +101,6 @@ def dyna_heuristic_with_lookahead(alpha: float,
             
             s = s_prime
             
-            if epsilon > min_epsilon:
-                epsilon = epsilon * epsilon_decay
-            
             # Add time step statistics
             total_return += reward
             action_numbers_monitor.append(a)
@@ -116,6 +113,9 @@ def dyna_heuristic_with_lookahead(alpha: float,
                 # Add episode statistics after finished
                 move_count = info.get('count')
                 moves_counter.append(move_count)
+        
+        if epsilon > min_epsilon:
+            epsilon = epsilon * epsilon_decay
         
         # Add episode statistics
         episode_reward.append(total_return)

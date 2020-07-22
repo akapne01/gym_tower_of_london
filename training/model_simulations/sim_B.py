@@ -2,7 +2,9 @@ import time
 import random
 from training.dyna_plan_end_rewards import dyna_heuristic_with_lookahead
 from training.utils.parameters import epsilon, transition_times, \
-    epsilon_decay, version, min_epsilon, alpha, gamma
+    epsilon_decay, version, alpha, gamma
+
+min_epsilon = 0.15
 
 """
 Experimental Problem B
@@ -11,7 +13,7 @@ start = 51
 goal = 32
 letter = 'B'
 
-episodes = 1000
+episodes = 600
 
 participants = 2
 
