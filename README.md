@@ -37,5 +37,5 @@ MIN_MOVES = {
     (51, 32): 5,
 }
 
-## To initalize problems it uses numbers as proposed by Berg & Byrd, 2002: https://www.researchgate.net/profile/W_Berg/publication/11201010_The_Tower_of_London_Spatial_Problem-Solving_Task_Enhancing_Clinical_and_Research_Implementation/links/0a85e5321de4fed8c6000000/The-Tower-of-London-Spatial-Problem-Solving-Task-Enhancing-Clinical-and-Research-Implementation.pdf
-
+## To initalize problems it uses numbers as proposed by Berg & Byrd, 2002: 
+https://www.researchgate.net/profile/W_Berg/publication/11201010_The_Tower_of_London_Spatial_Problem-Solving_Task_Enhancing_Clinical_and_Research_Implementation/links/0a85e5321de4fed8c6000000/The-Tower-of-London-Spatial-Problem-Solving-Task-Enhancing-Clinical-and-Research-Implementation.pdf
