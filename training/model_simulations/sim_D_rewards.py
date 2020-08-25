@@ -1,8 +1,8 @@
 import time
-import random
+
 from training.model_simulations.rewards_lookahead import dyna_rewards_lookahead
 from training.utils.parameters import epsilon, transition_times, \
-    epsilon_decay, version, alpha, gamma
+    epsilon_decay, version, alpha, gamma, min_epsilon
 
 """
 Experimental Problem D
@@ -15,19 +15,14 @@ letter = 'D'
 episodes = 1000
 
 participants = 40
-min_epsilon = 0.05
 
 if __name__ == '__main__':
     time_per_depth = []
     start_time = time.time()
 
-    for pid in range(64, 90):
+    for pid in range(50, 90):
 
-        # alpha = random.uniform(0, 1)
-        # gamma = random.uniform(0, 1)
-        # min_epsilon = random.uniform(0, 1)
-
-        for i in range(1, 5):
+        for i in range(0, 5):
             depth = i
             start_time_per_depth = time.time()
             dyna_rewards_lookahead(alpha=alpha,
