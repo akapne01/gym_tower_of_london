@@ -20,19 +20,19 @@ def no_in_positions(state: int, goal: int) -> int:
     """
     # get current ball positions
     red, green, blue = state_ball_mapper.get(state)
-    
+
     # get goal ball positions
     red_goal, green_goal, blue_goal = state_ball_mapper.get(goal)
-    
+
     # Init counter
     balls_in_goal_place = 0
-    
+
     if red == red_goal:
         balls_in_goal_place += 1
-    
+
     if green == green_goal:
         balls_in_goal_place += 1
-    
+
     if blue == blue_goal:
         balls_in_goal_place += 1
     return balls_in_goal_place
@@ -62,20 +62,22 @@ def calculate_step_reward(action: int,
     before = no_in_positions(state, goal_state)
     balls_in_goal_place = no_in_positions(action, goal_state)
     min_moves = get_min_no_moves(start_position, goal_state)
-    
+
     if moves_made > 55:
         return -1
+
     if action == goal_state:
         if moves_made == min_moves:
             return 100
         return 1
-    
     if balls_in_goal_place > before:
+        if before == 1:
+            return 0.5
         return 0.25
     elif balls_in_goal_place == before:
         return 0
     else:
-        return (-1) * 0.25
+        return -0.5
 
 
 def find_max(tree, state):
@@ -113,7 +115,7 @@ def add_one_level_q_values(nodes, tree, start, goal, q_values,
     :param moves_so_far: how many moves are simulated
     :param states_in_tree: which states have already been added to the tree
     """
-    
+
     # nodes can be a state or a list of nodes
     if isinstance(nodes, list):
         for n in nodes:
@@ -122,7 +124,7 @@ def add_one_level_q_values(nodes, tree, start, goal, q_values,
     else:
         children = get_possible_actions(nodes)
         # g.add_nodes_from(children)
-        
+
         """
         Loop through children and copy the q_values, visits and
         """
@@ -146,7 +148,7 @@ def add_one_level_step_reward(nodes, g, start_position, goal, moves_so_far,
     :param moves_so_far: how many moves are simulated
     :param states_in_tree: which states have already been added to the tree
     """
-    
+
     # nodes can be a state or a list of nodes
     if isinstance(nodes, list):
         for n in nodes:
@@ -155,7 +157,7 @@ def add_one_level_step_reward(nodes, g, start_position, goal, moves_so_far,
     else:
         children = get_possible_actions(nodes)
         # g.add_nodes_from(children)
-        
+
         """
         Loop through children and copy the q_values, visits and 
         """
@@ -184,7 +186,7 @@ def build_q_value_tree(state, depth, start_state, goal_state, q_values):
     :return:
     """
     tree = nx.DiGraph()
-    
+
     # States that are added to the tree are saved in this set
     states_in_tree = set()
     states_in_tree.add(state)
@@ -192,22 +194,22 @@ def build_q_value_tree(state, depth, start_state, goal_state, q_values):
     Add current node
     """
     tree.add_node(state)
-    
+
     """
     Add 1 level lookahead
     """
     states = state
     add_one_level_q_values(states, tree, start_state, goal_state, q_values,
                            states_in_tree)
-    
+
     # add_one_level_step_reward(states, tree, start_state, goal_state, moves_made,
     #                           states_in_tree)
-    
+
     """
     Add higher level lookahead
     """
     states = get_possible_actions(state)
-    
+
     for i in range(depth - 1):
         next_states = []
         for s in states:  # add one level for each of the child nodes
@@ -232,7 +234,7 @@ def build_search_tree(state, depth, start_state, goal_state, moves_made):
     :return:
     """
     g = nx.DiGraph()
-    
+
     # States that are added to the tree are saved in this set
     states_in_tree = set()
     states_in_tree.add(state)
@@ -252,7 +254,7 @@ def build_search_tree(state, depth, start_state, goal_state, moves_made):
     Add higher level lookahead
     """
     states = get_possible_actions(state)
-    
+
     for i in range(depth - 1):
         next_states = []
         for s in states:  # add one level for each of the child nodes
@@ -279,7 +281,7 @@ def search_graph(state, depth, start_state, goal_state, moves_made):
     # create graph
     # g = nx.DiGraph()
     g = nx.Graph()
-    
+
     # States that are added to the tree are saved in this set
     states_in_tree = set()
     states_in_tree.add(state)
@@ -299,7 +301,7 @@ def search_graph(state, depth, start_state, goal_state, moves_made):
     Add higher level lookahead
     """
     states = get_possible_actions(state)
-    
+
     for i in range(depth - 1):
         next_states = []
         for s in states:  # add one level for each of the child nodes
@@ -414,13 +416,13 @@ def hierarchy_pos(G, root=None, width=1., vert_gap=0.2, vert_loc=0,
     if not nx.is_tree(G):
         raise TypeError(
             'cannot use hierarchy_pos on a graph that is not a tree')
-    
+
     if root is None:
         if isinstance(G, nx.DiGraph):
             root = next(iter(nx.topological_sort(G)))
         else:
             root = random.choice(list(G.nodes))
-    
+
     return _hierarchy_pos(G, root, width, vert_gap, vert_loc, xcenter)
 
 
@@ -496,17 +498,17 @@ def plan_for_best_actions(state, tree) -> List:
     """
     max_planned = 0
     best_children = []
-    
+
     print(state)
     actions = tree.neighbors(state)
-    
+
     for node in actions:
         value = find_max(tree, node)
         if value > max_planned and node != state:
             max_planned = value
             best_children.append(node)
     print('## plan_for_best_actions returns:', best_children)
-    
+
     return best_children
 
 
@@ -528,48 +530,54 @@ if __name__ == '__main__':
     """
     Populates png files with search trees for all possible ToL problems
     """
-    i = 23
-    j = 62
-    
-    start_state = i
-    goal_state = j
-    moves_made = 0
-    
-    depth = 3
-    print('Depth: ', depth)
-    # G = problem_space_graph()
-    state = i
-    
-    v = look_for_rewards_in_tree(state=23, depth=4, start=23, goal=62,
-                                 moves_made=0)
-    print(f'find_heuristic_action returned {v}')
-    
+    # i = 23
+    # j = 62
+    #
+    # start_state = i
+    # goal_state = j
+    # moves_made = 0
+    #
+    # depth = 3
+    # print('Depth: ', depth)
+    # # G = problem_space_graph()
+    # state = i
+    #
+    # v = look_for_rewards_in_tree(state=23, depth=4, start=23, goal=62,
+    #                              moves_made=0)
+    # print(f'find_heuristic_action returned {v}')
+
     # def find_max_children(state, depth, start, goal, moves):
     #     actions = get_possible_actions(state)
     #     tree = build_search_tree(state=state, depth=depth, start_state=start,
     #                              goal_state=goal,
     #                              moves_made=moves)
     #
-    
+
     # To draw a tree
-    tree = build_search_tree(state=23, depth=5, start_state=23,
-                             goal_state=62,
-                             moves_made=0)
-    # av = plan_for_best_actions(23, tree)
-    # print(f'plan_for_best_actions = {av}')
-    
+
+    start = 23
+    goal = 62
+
+    state = start
+    depth = 4
+    moves_made = 0
+    tree = build_search_tree(state=state, depth=depth, start_state=start,
+                             goal_state=goal,
+                             moves_made=moves_made)
+
     pos = hierarchy_pos(tree, state)
     # pos = nx.spring_layout(tree, state)
-    nx.draw(tree, pos=pos, with_labels=True, node_size=600,
-            node_color='lightgreen')
+    nx.draw(tree, pos=pos, with_labels=True, node_size=600, node_color='lightgreen')
     #
-    labels = format(nx.get_edge_attributes(tree, 'weight'), '.2f')
-    #
+    # labels = format(nx.get_edge_attributes(tree, 'weight'), '.2f')
+    # print(nx.get_edge_attributes(tree, 'weight'))
+    # labels = format(nx.get_edge_attributes(tree, 'weight'), '.2f')
+    labels = nx.get_edge_attributes(tree, 'weight')
     nx.draw_networkx_edge_labels(tree, pos, edge_labels=labels,
                                  font_color='black')
     nx.draw_networkx_edges(tree, pos, edge_color='green', arrows=True)
     # plt.savefig(f'tree_{i}_{j}_{depth}.png')
     #
     plt.show()
-    
-    draw_problem_space()
+
+    # draw_problem_space()

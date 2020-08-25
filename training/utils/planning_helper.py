@@ -67,6 +67,25 @@ def get_a_with_max_q(state: int, Q: pd.DataFrame) -> List:
     return best
 
 
+def get_min_q(state: int, Q: pd.DataFrame) -> List:
+    """
+    Gets the next actions and find the
+    max of the action Q values for specified
+    state. Returns list of actions that have
+    max q_values from specified state.
+    """
+    worst = []
+    actions = get_possible_actions(state)
+
+    df = Q.loc[actions]  # slices df to only possible actions
+    min_s = df[state].min()
+    for a in actions:
+        value = Q.loc[a, state]
+        if value == min_s:
+            worst.append(a)
+    return worst
+
+
 def get_possible_actions(state: int) -> List:
     """
     Calculates which actions can be taken from specified state.

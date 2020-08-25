@@ -1,3 +1,4 @@
+import os
 import random
 from collections import deque
 from typing import Tuple, Dict, List
@@ -30,6 +31,29 @@ def q_value_update(Q: pd.DataFrame,
     td_target = r + gamma * max_next_q
     td_delta = td_target - Q.loc[a, s]
     Q.loc[a, s] = Q.loc[a, s] + alpha * td_delta
+
+
+def select_action_with_min_q(state: int, q: pd.DataFrame, ) -> int:
+    a = get_a_with_max_q(state, q)
+    return random.choice(a)
+
+
+def select_action_with_greedy_policy(state: int,
+                                     q: pd.DataFrame) -> int:
+    """
+    Action selection policy.
+    Simulates a biased coin flip by obtaining a random number
+    between 0 and 1.
+    If random number is smaller than epsilon, then choose action
+    randomly. If bigger than epsilon, then action is selected
+    based on the max q_value.
+    If more than one action has maximum q_value then one of those
+    actions is randomly selected. If only 1 action has max q_value
+    then that value is returned.
+    :return: action to take next
+    """
+    a = get_a_with_max_q(state, q)
+    return random.choice(a)
 
 
 def select_action_epsilon_greedy(state: int,
@@ -96,17 +120,22 @@ def save_stats_csv(Q: pd.DataFrame,
                    min_moves: int,
                    epsilon_monitor: List,
                    pid: int,
-                   no_last_moves: int) -> None:
+                   no_last_moves: int,
+                   type=None) -> None:
     """
     Saves CSV files:
     Q_values and training moves and statistics. Parameters are saved in the CSV name
     """
-    params = f'ep={episodes}_pid={pid}_al={alpha}_gam={gamma}__depth={depth}_eps={epsilon}_mtrans={transition_times}'
+    if type:
+        params = f'ep={episodes}_pid={pid}_al={alpha}_gam={gamma}__depth=' \
+                 f'{depth}_eps={epsilon}_mtrans={transition_times}_{type}'
+    else:
+        params = f'ep={episodes}_pid={pid}_al={alpha}_gam={gamma}__depth={depth}_eps={epsilon}_mtrans={transition_times}'
     q_value_path = f'{letter}/{letter}_{version}_dyna-h_qvalues_{params}.csv'
     stats_path = f'{letter}/{letter}_{version}_dyna-h_stats_{params}.csv'
-    
+
     Q.to_csv(q_value_path)
-    
+
     df = pd.DataFrame(data=episode_moves, columns=['MOVE_COUNT'])
     df['EPISODE_REWARDS'] = episode_reward
     df['ACTIONS_NUMBERS'] = actions_taken
@@ -115,7 +144,7 @@ def save_stats_csv(Q: pd.DataFrame,
     df['ALPHA'] = alpha
     df['GAMMA'] = gamma
     df.to_csv(stats_path, index=False)
-    
+
     stats = pd.DataFrame(df.MOVE_COUNT.describe())
     stats.loc['no_min_moves', 'MOVE_COUNT'] = np.sum(
         df.MOVE_COUNT == min_moves)
@@ -125,7 +154,14 @@ def save_stats_csv(Q: pd.DataFrame,
         stats[col] = df_last.MOVE_COUNT.describe()
         stats.loc['no_min_moves', col] = np.sum(
             df_last.MOVE_COUNT == min_moves)
-    stats.to_csv(f'STATS/{letter}_statistics_{params}.csv')
+    if type:
+        dir = f'STATS/{letter}/{type}/depth_{depth}/'
+    else:
+        dir = f'STATS/{letter}/depth_{depth}/'
+    if not os.path.exists(dir):
+        os.makedirs(dir)
+    file = os.path.join(dir, f'{letter}_stats_{params}.csv')
+    stats.to_csv(file)
     return stats
 
 
